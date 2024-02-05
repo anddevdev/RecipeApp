@@ -1,6 +1,7 @@
 package com.example.recipeapp
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
@@ -10,30 +11,36 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import coil.compose.rememberAsyncImagePainter
 
 @Composable
-fun CategoryDetailScreen(category: Category){
+fun CategoryDetailScreen(category: Category, onImageClick: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally)
-    {
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
         Text(text = category.strCategory, textAlign = TextAlign.Center)
         Image(
-            painter = rememberAsyncImagePainter (category.strCategoryThumb),
+            painter = rememberAsyncImagePainter(category.strCategoryThumb),
             contentDescription = category.strCategory,
             modifier = Modifier
                 .wrapContentSize()
-                .aspectRatio(1f))
+                .aspectRatio(1f)
+                .clickable { onImageClick() }
+        )
 
-        Text(text = category.strCategoryDescription,
+        Text(
+            text = category.strCategoryDescription,
             textAlign = TextAlign.Justify,
-            modifier = Modifier.verticalScroll(rememberScrollState()))
+            modifier = Modifier.verticalScroll(rememberScrollState())
+        )
     }
 }
