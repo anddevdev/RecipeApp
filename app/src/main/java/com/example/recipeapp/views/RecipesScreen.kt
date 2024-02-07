@@ -2,6 +2,7 @@ package com.example.recipeapp.views
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -62,6 +63,7 @@ fun RecipeItem(recipe: Recipe) {
             .fillMaxWidth()
             .padding(16.dp)
             .background(MaterialTheme.colorScheme.surface)
+            .border(1.dp, color = Color.Gray, shape = MaterialTheme.shapes.medium) // Adding border
     ) {
 
         Image(
