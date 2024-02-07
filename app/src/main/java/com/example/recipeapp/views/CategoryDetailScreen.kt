@@ -1,6 +1,7 @@
-package com.example.recipeapp
+package com.example.recipeapp.views
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
@@ -15,25 +16,30 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import coil.compose.rememberAsyncImagePainter
+import com.example.recipeapp.data.Category
 
 @Composable
-fun CategoryDetailScreen(category: Category){
+fun CategoryDetailScreen(category: Category, onImageClick: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally)
-    {
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
         Text(text = category.strCategory, textAlign = TextAlign.Center)
         Image(
-            painter = rememberAsyncImagePainter (category.strCategoryThumb),
+            painter = rememberAsyncImagePainter(category.strCategoryThumb),
             contentDescription = category.strCategory,
             modifier = Modifier
                 .wrapContentSize()
-                .aspectRatio(1f))
+                .aspectRatio(1f)
+                .clickable { onImageClick() }
+        )
 
-        Text(text = category.strCategoryDescription,
+        Text(
+            text = category.strCategoryDescription,
             textAlign = TextAlign.Justify,
-            modifier = Modifier.verticalScroll(rememberScrollState()))
+            modifier = Modifier.verticalScroll(rememberScrollState())
+        )
     }
 }

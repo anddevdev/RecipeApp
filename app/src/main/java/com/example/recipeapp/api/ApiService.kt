@@ -1,5 +1,6 @@
-package com.example.recipeapp
+package com.example.recipeapp.api
 
+import com.example.recipeapp.data.CategoriesResponse
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.GET
@@ -13,7 +14,12 @@ private val retrofit = Retrofit.Builder().baseUrl("https://www.themealdb.com/api
 
 interface ApiService {
     @GET("categories.php")
-    suspend fun getCategories():CategoriesResponse
+    suspend fun getCategories(): CategoriesResponse
 
 
 }
+
+
+
+
+
