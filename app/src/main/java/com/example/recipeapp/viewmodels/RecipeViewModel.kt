@@ -1,10 +1,12 @@
-package com.example.recipeapp
+package com.example.recipeapp.viewmodels
 
 import android.util.Log
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.recipeapp.data.Recipe
+import com.example.recipeapp.api.RecipeApiService
 import kotlinx.coroutines.launch
 
 

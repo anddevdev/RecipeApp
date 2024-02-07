@@ -1,5 +1,6 @@
-package com.example.recipeapp
+package com.example.recipeapp.api
 
+import com.example.recipeapp.data.RecipesResponse
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.GET

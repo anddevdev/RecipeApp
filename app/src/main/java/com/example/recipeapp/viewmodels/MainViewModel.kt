@@ -1,9 +1,11 @@
-package com.example.recipeapp
+package com.example.recipeapp.viewmodels
 
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.State
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.recipeapp.data.Category
+import com.example.recipeapp.api.recipeService
 import kotlinx.coroutines.launch
 
 class MainViewModel : ViewModel() {
