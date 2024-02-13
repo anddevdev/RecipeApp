@@ -40,4 +40,3 @@ class RecipeDetailViewModel : ViewModel() {
     )
 }
 
-//TODO: Make this a class

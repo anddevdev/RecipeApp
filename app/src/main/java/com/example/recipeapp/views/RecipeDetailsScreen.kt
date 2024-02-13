@@ -14,7 +14,7 @@ import coil.compose.rememberAsyncImagePainter
 import com.example.recipeapp.viewmodels.RecipeDetailViewModel
 import androidx.compose.runtime.LaunchedEffect
 import com.example.recipeapp.data.Recipe
-import com.example.recipeapp.data.RecipeDetails
+
 
 
 @Composable
@@ -133,6 +133,7 @@ fun RecipeDetailScreen(viewModel: RecipeDetailViewModel, recipe: Recipe) {
                             }
                         }
                     }
+
                 } else {
                     Text(text = "Recipe not found", modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp))
                 }
