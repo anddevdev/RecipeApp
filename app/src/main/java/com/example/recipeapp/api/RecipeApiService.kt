@@ -18,5 +18,3 @@ interface RecipeApiService {
         val recipeApiService: RecipeApiService = retrofit.create(RecipeApiService::class.java)
     }
 }
-
-//TODO: restructure it(as in ApiService.kt) or add dependency injection

@@ -53,8 +53,6 @@ data class RecipeDetails(
     val strMeasure19: String,
     val strMeasure20: String,
 
-) : Parcelable
+    ) : Parcelable
 
 data class RecipeDetailsResponse(val meals: List<RecipeDetails>)
-
-//TODO:Too much lines for ingredients and measures, need to do something with it

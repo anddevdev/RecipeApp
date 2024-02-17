@@ -39,4 +39,3 @@ class RecipeDetailViewModel : ViewModel() {
         val error: String? = null
     )
 }
-

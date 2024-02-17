@@ -1,5 +1,6 @@
 package com.example.recipeapp.views
 
+
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -14,7 +15,6 @@ import coil.compose.rememberAsyncImagePainter
 import com.example.recipeapp.viewmodels.RecipeDetailViewModel
 import androidx.compose.runtime.LaunchedEffect
 import com.example.recipeapp.data.Recipe
-
 
 
 @Composable
@@ -133,16 +133,13 @@ fun RecipeDetailScreen(viewModel: RecipeDetailViewModel, recipe: Recipe) {
                             }
                         }
                     }
-
-                } else {
-                    Text(text = "Recipe not found", modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp))
+                }else {
+                    Text(
+                        text = "Recipe not found",
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp)
+                    )
                 }
             }
         }
     }
 }
-//TODO:Change design to include everything from the api response, style it properly,
-// do something with RecipeDetails.kt to avoid writing 40 lines of code for measures and ingredients here,
-// also add the youtube video(!)
-
-
