@@ -14,6 +14,8 @@ Recipe App is a user-friendly Android application that serves as a culinary comp
 
 5. TheMealDB API
 
+6. Google Firebase
+
 ## Features
 
 - Meal Categories: Browse through an extensive list of meal categories, from breakfast to desserts, each offering a diverse range of recipes.
