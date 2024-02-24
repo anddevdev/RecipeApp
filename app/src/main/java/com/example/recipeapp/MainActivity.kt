@@ -3,23 +3,35 @@ package com.example.recipeapp
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
+import androidx.compose.runtime.*
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
-import com.example.recipeapp.ui.theme.RecipeAppTheme
+import com.example.recipeapp.RecipeApp
+import com.example.recipeapp.viewmodels.LoginViewModel
+import com.example.recipeapp.viewmodels.RegistrationViewModel
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
             val navController = rememberNavController()
-            RecipeApp(navController)
+            val loginViewModel: LoginViewModel = viewModel()
+            val registrationViewModel: RegistrationViewModel = viewModel()
+
+            var isLoggedOut by remember { mutableStateOf(true) }
+            var isRegistered by remember { mutableStateOf(false) }
+            var isLoggedIn by remember { mutableStateOf(false) }
+
+            RecipeApp(
+                navController = navController,
+                isLoggedOut = isLoggedOut,
+                isRegistered = isRegistered,
+                loginViewModel = loginViewModel,
+                registrationViewModel = registrationViewModel,
+                isLoggedIn = isLoggedIn
+            )
         }
     }
 }
