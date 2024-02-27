@@ -74,6 +74,18 @@ fun LoginScreen(
             Text("Login")
         }
         Spacer(modifier = Modifier.height(16.dp))
+
+        Button(onClick = { viewModel.signInAnonymously { isSuccess, errorMsg ->
+            if (isSuccess) {
+                onLoginSuccess()
+            } else {
+                errorMessage = errorMsg ?: "Anonymous login failed"
+            }
+        }}) {
+            Text("Login anonymously")
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
         Button(onClick = onRegisterClick) {
             Text("Register new account")
         }

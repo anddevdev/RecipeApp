@@ -8,6 +8,7 @@ class LoginViewModel : ViewModel() {
 
     private val auth = FirebaseAuth.getInstance()
     val isLoggedOut = MutableLiveData<Boolean>()
+    val isLoggedInAnonymously = MutableLiveData<Boolean>()
 
     init {
         isLoggedOut.value = true
@@ -21,6 +22,18 @@ class LoginViewModel : ViewModel() {
                     callback(true, null) // Login successful
                 } else {
                     callback(false, task.exception?.message) // Login failed
+                }
+            }
+    }
+
+    fun signInAnonymously(callback: (Boolean, String?) -> Unit) {
+        auth.signInAnonymously()
+            .addOnCompleteListener { task ->
+                if (task.isSuccessful) {
+                    isLoggedInAnonymously.value = true
+                    callback(true, null) // Sign in success
+                } else {
+                    callback(false, task.exception?.message) // Sign in failed
                 }
             }
     }

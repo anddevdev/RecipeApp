@@ -93,7 +93,7 @@ fun RecipeApp(navController: NavHostController,
                 onRegisterClick = {
                     navController.navigate(Screen.RegisterScreen.route)
                 },
-                viewModel = loginViewModel // Pass your LoginViewModel here
+                viewModel = loginViewModel
             )
         }
 
@@ -106,7 +106,7 @@ fun RecipeApp(navController: NavHostController,
                         popUpTo(Screen.RecipeScreen.route) { inclusive = true }
                     }
                 },
-                viewModel = registrationViewModel // Pass your RegisterViewModel here
+                viewModel = registrationViewModel
             )
         }
     }

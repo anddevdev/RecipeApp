@@ -7,6 +7,7 @@ import androidx.compose.material3.TextField
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.example.recipeapp.viewmodels.RegistrationViewModel
 
@@ -47,6 +48,7 @@ fun RegisterScreen(
                 isPasswordValid = it.isNotBlank() && it.length >= 6 // Example: Minimum 6 characters
             },
             label = { Text("Password") },
+            visualTransformation = PasswordVisualTransformation(),
             isError = !isPasswordValid,
             modifier = Modifier.fillMaxWidth()
         )
@@ -72,3 +74,4 @@ fun RegisterScreen(
         }
     }
 }
+
