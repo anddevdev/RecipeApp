@@ -14,16 +14,43 @@ import androidx.compose.ui.unit.dp
 import coil.compose.rememberAsyncImagePainter
 import com.example.recipeapp.viewmodels.RecipeDetailViewModel
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import com.example.recipeapp.data.Recipe
+import com.example.recipeapp.viewmodels.FavoritesViewModel
+import com.google.firebase.auth.FirebaseAuth
+import kotlinx.coroutines.launch
 
 
 @Composable
-fun RecipeDetailScreen(viewModel: RecipeDetailViewModel, recipe: Recipe) {
+fun RecipeDetailScreen(
+    viewModel: RecipeDetailViewModel,
+    recipe: Recipe,
+    favoritesViewModel: FavoritesViewModel,
+    navigateToFavoriteRecipes: () -> Unit) {
+
+    var isFavorite by remember { mutableStateOf(false) }
+
+    // Coroutine scope to call suspend functions
+    val coroutineScope = rememberCoroutineScope()
 
     val recipeDetailState = viewModel.recipeDetailState.value
 
     LaunchedEffect(recipe) {
-        viewModel.fetchRecipeDetails(recipe.strMeal)
+        viewModel.fetchRecipeDetailsIfNeeded(recipe.strMeal)
+    }
+
+    // Observe changes in favorites list and update isFavorite accordingly
+    LaunchedEffect(Unit) {
+        val userId = FirebaseAuth.getInstance().currentUser?.uid
+        if (userId != null) {
+            val favorites = favoritesViewModel.getFavorites(userId)
+            isFavorite = favorites.contains(recipe.strMeal)
+        }
     }
 
     LazyColumn(
@@ -132,8 +159,27 @@ fun RecipeDetailScreen(viewModel: RecipeDetailViewModel, recipe: Recipe) {
                                 )
                             }
                         }
+                        Button(
+                            onClick = {
+                                coroutineScope.launch {
+                                    val userId = FirebaseAuth.getInstance().currentUser?.uid
+                                    if (userId != null) {
+                                        if (isFavorite) {
+                                            favoritesViewModel.removeFavorite(userId, recipe.strMeal)
+                                        } else {
+                                            favoritesViewModel.addFavorite(userId, recipe.strMeal)
+                                        }
+                                        isFavorite = !isFavorite
+                                    }
+                                }
+                            },
+                            modifier = Modifier.align(Alignment.CenterHorizontally)
+                        ) {
+                            Text(if (isFavorite) "Remove from Favorites" else "Add to Favorites")
+                        }
                     }
-                }else {
+                } else {
+                    // Show recipe not found message
                     Text(
                         text = "Recipe not found",
                         modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp)
@@ -141,5 +187,16 @@ fun RecipeDetailScreen(viewModel: RecipeDetailViewModel, recipe: Recipe) {
                 }
             }
         }
+        item {
+            // Button to navigate to favorite recipes screen
+            Button(
+                onClick = { navigateToFavoriteRecipes() },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Go to Favorite Recipes")
+            }
+        }
     }
 }
+
+

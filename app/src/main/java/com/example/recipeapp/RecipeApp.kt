@@ -2,6 +2,7 @@ package com.example.recipeapp
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -9,12 +10,15 @@ import androidx.navigation.compose.composable
 import com.example.recipeapp.data.Category
 import com.example.recipeapp.data.Recipe
 import com.example.recipeapp.data.Screen
+import com.example.recipeapp.repositories.FirestoreRepository
+import com.example.recipeapp.viewmodels.FavoritesViewModel
 import com.example.recipeapp.viewmodels.LoginViewModel
 import com.example.recipeapp.viewmodels.MainViewModel
 import com.example.recipeapp.viewmodels.RecipeDetailViewModel
 import com.example.recipeapp.viewmodels.RecipeViewModel
 import com.example.recipeapp.viewmodels.RegistrationViewModel
 import com.example.recipeapp.views.CategoryDetailScreen
+import com.example.recipeapp.views.FavoriteRecipesScreen
 import com.example.recipeapp.views.LoginScreen
 import com.example.recipeapp.views.RecipeDetailScreen
 import com.example.recipeapp.views.RecipeScreen
@@ -27,10 +31,15 @@ fun RecipeApp(navController: NavHostController,
               isLoggedOut: Boolean,
               isRegistered: Boolean,
               loginViewModel: LoginViewModel,
-              registrationViewModel: RegistrationViewModel
+              registrationViewModel: RegistrationViewModel,
+              firestoreRepository: FirestoreRepository
 ) {
     val recipeViewModel: MainViewModel = viewModel()
     val viewstate by recipeViewModel.categoriesState
+
+    val favoritesViewModel = remember {
+        FavoritesViewModel(firestoreRepository) // Remember the FavoritesViewModel
+    }
 
     NavHost(navController = navController, startDestination = determineStartDestination(isLoggedOut, isRegistered)) {
         // Recipe screen
@@ -78,7 +87,9 @@ fun RecipeApp(navController: NavHostController,
             val recipe = navController.previousBackStackEntry?.savedStateHandle?.get<Recipe>("recipe")
                 ?: Recipe("", "", "", "")
 
-            RecipeDetailScreen(recipeDetailsViewModel, recipe = recipe)
+            RecipeDetailScreen(recipeDetailsViewModel, recipe = recipe,favoritesViewModel){
+                navController.navigate(Screen.FavoriteRecipesScreen.route)
+            }
         }
 
         // Login screen
@@ -108,6 +119,14 @@ fun RecipeApp(navController: NavHostController,
                 },
                 viewModel = registrationViewModel
             )
+        }
+
+        composable(Screen.FavoriteRecipesScreen.route) {
+            FavoriteRecipesScreen(favoritesViewModel = remember {
+                FavoritesViewModel(
+                    firestoreRepository
+                )
+            })
         }
     }
 }

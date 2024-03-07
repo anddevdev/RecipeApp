@@ -17,6 +17,7 @@ class RecipeViewModel : ViewModel() {
     val recipesState: State<RecipesState> = _recipesState
 
 
+
 fun fetchRecipesByCategory(category: String) {
     viewModelScope.launch {
         try {
