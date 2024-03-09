@@ -5,11 +5,8 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.*
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
-import com.example.recipeapp.RecipeApp
 import com.example.recipeapp.repositories.FirestoreRepository
 import com.example.recipeapp.viewmodels.LoginViewModel
 import com.example.recipeapp.viewmodels.RegistrationViewModel

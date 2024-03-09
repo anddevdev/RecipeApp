@@ -7,10 +7,10 @@ class FirestoreRepository {
 
     private val firestore = FirebaseFirestore.getInstance()
 
-    suspend fun addFavorite(userId: String, recipeId: String) {
+    suspend fun addFavorite(userId: String, recipeId: String, thumbnailUrl: String) {
         val favoriteRef = firestore.collection("users").document(userId)
             .collection("favorites").document(recipeId)
-        favoriteRef.set(mapOf("recipeId" to recipeId))
+        favoriteRef.set(mapOf("recipeId" to recipeId, "thumbnailUrl" to thumbnailUrl))
     }
 
     suspend fun removeFavorite(userId: String, recipeId: String) {
@@ -19,9 +19,16 @@ class FirestoreRepository {
         favoriteRef.delete()
     }
 
-    suspend fun getFavorites(userId: String): List<String> {
+
+    suspend fun getFavorites(userId: String): List<Pair<String, String>> {
         val favoritesSnapshot = firestore.collection("users").document(userId)
             .collection("favorites").get().await()
-        return favoritesSnapshot.documents.map { it.getString("recipeId")!! }
+        val favoriteRecipes = mutableListOf<Pair<String, String>>()
+        for (document in favoritesSnapshot.documents) {
+            val recipeId = document.id
+            val thumbnailUrl = document.getString("thumbnailUrl") ?: ""
+            favoriteRecipes.add(Pair(recipeId, thumbnailUrl))
+        }
+        return favoriteRecipes
     }
 }

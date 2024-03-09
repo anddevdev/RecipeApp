@@ -44,12 +44,11 @@ fun RecipeDetailScreen(
         viewModel.fetchRecipeDetailsIfNeeded(recipe.strMeal)
     }
 
-    // Observe changes in favorites list and update isFavorite accordingly
     LaunchedEffect(Unit) {
         val userId = FirebaseAuth.getInstance().currentUser?.uid
         if (userId != null) {
             val favorites = favoritesViewModel.getFavorites(userId)
-            isFavorite = favorites.contains(recipe.strMeal)
+            isFavorite = favorites.any { it.first == recipe.strMeal }
         }
     }
 
@@ -165,9 +164,14 @@ fun RecipeDetailScreen(
                                     val userId = FirebaseAuth.getInstance().currentUser?.uid
                                     if (userId != null) {
                                         if (isFavorite) {
-                                            favoritesViewModel.removeFavorite(userId, recipe.strMeal)
+                                            favoritesViewModel.removeFavorite(
+                                                userId,
+                                                recipe.strMeal)
                                         } else {
-                                            favoritesViewModel.addFavorite(userId, recipe.strMeal)
+                                            favoritesViewModel.addFavorite(
+                                                userId,
+                                                recipe.strMeal,
+                                                recipe.strMealThumb)
                                         }
                                         isFavorite = !isFavorite
                                     }
@@ -198,5 +202,3 @@ fun RecipeDetailScreen(
         }
     }
 }
-
-
