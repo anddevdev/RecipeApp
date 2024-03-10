@@ -15,7 +15,13 @@ class RecipeDetailViewModel : ViewModel() {
 
     val recipeDetailState: State<RecipeDetailState> = _recipeDetailState
 
-    fun fetchRecipeDetails(recipeName: String) {
+    fun fetchRecipeDetailsIfNeeded(recipeName: String) {
+        if (_recipeDetailState.value.recipe == null) {
+            fetchRecipeDetails(recipeName)
+        }
+    }
+
+    private fun fetchRecipeDetails(recipeName: String) {
         viewModelScope.launch {
             try {
                 Log.d("RecipeDetailsViewModel", "Fetching details for recipe: $recipeName")
