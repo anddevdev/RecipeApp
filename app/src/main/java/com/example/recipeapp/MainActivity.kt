@@ -5,6 +5,7 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.*
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.rememberNavController
 import com.example.recipeapp.repositories.FirestoreRepository
@@ -19,50 +20,52 @@ class MainActivity : ComponentActivity() {
             val navController = rememberNavController()
             val loginViewModel: LoginViewModel = viewModel()
             val registrationViewModel: RegistrationViewModel = viewModel()
-
-            var isLoggedOut by remember { mutableStateOf(true) }
-            var isRegistered by remember { mutableStateOf(false) }
-            var isLoggedIn by remember { mutableStateOf(false) }
-
             val currentUser = FirebaseAuth.getInstance().currentUser
+
+
 
             RecipeApp(
                 navController = navController,
-                isLoggedOut = isLoggedOut,
-                isRegistered = isRegistered,
                 loginViewModel = loginViewModel,
                 registrationViewModel = registrationViewModel,
-                isLoggedIn = isLoggedIn,
                 firestoreRepository = FirestoreRepository(),
+
             )
 
 
-            // Observe changes in states to display Toast messages
-            loginViewModel.isLoggedOut.observe(this) { isLoggedOut ->
+            // Observe changes in login status to display Toast messages
+            val isLoggedOut by loginViewModel.isLoggedOut.observeAsState(initial = true)
+
+            LaunchedEffect(isLoggedOut) {
                 if (!isLoggedOut) {
                     showToast("Login successful")
                 }
             }
 
-            loginViewModel.isLoggedOut.observe(this) { isLoggedOut ->
+            LaunchedEffect(isLoggedOut) {
                 if (isLoggedOut) {
                     showToast("You are logged out")
                 }
             }
 
-            loginViewModel.isLoggedInAnonymously.observe(this) { isLoggedInAnonymously ->
+            val isLoggedInAnonymously by loginViewModel.isLoggedInAnonymously.observeAsState(initial = false)
+
+            LaunchedEffect(isLoggedInAnonymously) {
                 if (isLoggedInAnonymously) {
                     showToast("You are logged in as anonymous user")
                 }
             }
 
-            registrationViewModel.isRegistered.observe(this) { isRegistered ->
+            val isRegistered by registrationViewModel.isRegistered.observeAsState(initial = false)
+
+            LaunchedEffect(isRegistered) {
                 if (isRegistered) {
                     showToast("Registration successful")
                 }
             }
         }
     }
+
 
     private fun showToast(message: String) {
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
