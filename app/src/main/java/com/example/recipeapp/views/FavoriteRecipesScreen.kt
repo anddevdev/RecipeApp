@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
@@ -26,7 +27,7 @@ import com.google.firebase.auth.FirebaseAuth
 fun FavoriteRecipesScreen(favoritesViewModel: FavoritesViewModel) {
     val userId = FirebaseAuth.getInstance().currentUser?.uid
 
-    var favoriteRecipes by remember { mutableStateOf<List<Pair<String, String>>>(emptyList()) }
+    var favoriteRecipes by remember { mutableStateOf<List<Triple<String, String, String>>?>(null) }
 
     LaunchedEffect(userId) {
         userId?.let { uid ->
@@ -39,15 +40,28 @@ fun FavoriteRecipesScreen(favoritesViewModel: FavoritesViewModel) {
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp)
     ) {
-        items(favoriteRecipes) { recipePair ->
-            FavoriteRecipeItem(recipePair = recipePair)
+        if (favoriteRecipes == null) {
+            item {
+                CircularProgressIndicator(Modifier.fillParentMaxSize().padding(vertical = 16.dp))
+            }
+        } else if (favoriteRecipes?.isEmpty() == true) {
+            item {
+                Text(
+                    text = "No favorite recipes found",
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp)
+                )
+            }
+        } else {
+            items(favoriteRecipes ?: emptyList()) { recipeTriple ->
+                FavoriteRecipeItem(recipeTriple = recipeTriple)
+            }
         }
     }
 }
 
 @Composable
-fun FavoriteRecipeItem(recipePair: Pair<String, String>) {
-    val (recipeId, thumbnailUrl) = recipePair
+fun FavoriteRecipeItem(recipeTriple: Triple<String, String, String>) {
+    val (recipeId, category, thumbnailUrl) = recipeTriple
 
     Column(
         modifier = Modifier
@@ -67,8 +81,12 @@ fun FavoriteRecipeItem(recipePair: Pair<String, String>) {
         Spacer(modifier = Modifier.height(8.dp))
 
         Text(
-            text = recipeId,
-            modifier = Modifier.padding(vertical = 8.dp)
+            text = "Recipe: $recipeId",
+            modifier = Modifier.padding(vertical = 4.dp)
+        )
+        Text(
+            text = "Category: $category",
+            modifier = Modifier.padding(vertical = 4.dp)
         )
     }
 }

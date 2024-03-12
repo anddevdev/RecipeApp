@@ -171,7 +171,8 @@ fun RecipeDetailScreen(
                                             favoritesViewModel.addFavorite(
                                                 userId,
                                                 recipe.strMeal,
-                                                recipe.strMealThumb)
+                                                recipe.strMealThumb,
+                                                recipe.strCategory)
                                         }
                                         isFavorite = !isFavorite
                                     }
