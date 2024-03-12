@@ -5,8 +5,8 @@ import com.example.recipeapp.repositories.FirestoreRepository
 
 class FavoritesViewModel(private val firestoreRepository: FirestoreRepository) : ViewModel() {
     
-    suspend fun addFavorite(userId: String, recipeId: String, thumbnailUrl: String) {
-        firestoreRepository.addFavorite(userId, recipeId, thumbnailUrl)
+    suspend fun addFavorite(userId: String, recipeId: String, thumbnailUrl: String, category: String) {
+        firestoreRepository.addFavorite(userId, recipeId, thumbnailUrl,category)
     }
 
     suspend fun removeFavorite(userId: String, recipeId: String) {
@@ -14,7 +14,7 @@ class FavoritesViewModel(private val firestoreRepository: FirestoreRepository) :
 
     }
 
-    suspend fun getFavorites(userId: String): List<Pair<String, String>> {
+    suspend fun getFavorites(userId: String): List<Triple<String, String, String>> {
         return firestoreRepository.getFavorites(userId)
     }
 }

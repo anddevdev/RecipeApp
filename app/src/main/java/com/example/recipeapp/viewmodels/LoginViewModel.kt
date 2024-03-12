@@ -11,6 +11,7 @@ class LoginViewModel : ViewModel() {
     val isLoggedOut = MutableLiveData<Boolean>()
     val isLoggedInAnonymously = MutableLiveData<Boolean>()
 
+
     init {
         isLoggedOut.value = true
         isLoggedInAnonymously.value = false
@@ -41,10 +42,11 @@ class LoginViewModel : ViewModel() {
             }
     }
 
-    fun logout() {
+    fun logout(registrationViewModel: RegistrationViewModel) {
         auth.signOut()
         isLoggedOut.value = true
         isLoggedInAnonymously.value = false
+        registrationViewModel.isRegistered.value = false
     }
 
 }

@@ -164,7 +164,7 @@ fun RecipeApp(
                 Log.d("RecipeApp", "showLogoutDialog is true. Showing Logout Dialog")
                 LogoutDialog(
                     onLogout = {
-                        loginViewModel.logout()
+                        loginViewModel.logout(registrationViewModel)
                         navController.navigate(Screen.LoginScreen.route) {
                             popUpTo(Screen.LoginScreen.route) { inclusive = true }
                         }
@@ -222,6 +222,3 @@ private fun determineStartDestination(isLoggedOut: Boolean, isLoggedInAnonymousl
     }
 }
 
-/* TODO: Work on isRegistered state(when registered, user enters the "recipe" screen,
-     when he presses "back" button, he receives an alert dialog, logs out,
-      but bottom bar is still being displayed, this must be changed) */
