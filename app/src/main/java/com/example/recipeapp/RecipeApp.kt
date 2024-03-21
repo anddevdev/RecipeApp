@@ -37,7 +37,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.example.recipeapp.viewmodels.ProfileViewModel
 import com.example.recipeapp.views.LogoutDialog
+import com.example.recipeapp.views.ProfileScreen
+import com.google.firebase.auth.FirebaseAuth
 
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @Composable
@@ -157,6 +160,18 @@ fun RecipeApp(
                     Log.d("RecipeApp", "Showing FavoriteRecipesScreen")
                     FavoriteRecipesScreen(favoritesViewModel)
                 }
+
+                composable(route = Screen.ProfileScreen.route) {
+                    val userId = FirebaseAuth.getInstance().currentUser?.uid
+                    if (userId != null) {
+                        val profileViewModel =
+                            ProfileViewModel(firestoreRepository) // Initialize ProfileViewModel
+                        ProfileScreen(userId, profileViewModel,firestoreRepository)
+                    } else {
+                        // Handle null userId, perhaps navigate to login screen
+                        Log.e("RecipeApp", "User ID is null")
+                    }
+                }
             }
 
 
@@ -189,6 +204,9 @@ fun RecipeApp(
                         // Show the logout dialog if the user is on the recipe screen
                         showLogoutDialog = true
                     } else if (currentRoute == Screen.FavoriteRecipesScreen.route) {
+                        Log.d("BackHandler", "Navigate to RecipeScreen")
+                        navController.navigate(Screen.RecipeScreen.route)
+                    } else if (currentRoute == Screen.ProfileScreen.route) {
                         Log.d("BackHandler", "Navigate to RecipeScreen")
                         navController.navigate(Screen.RecipeScreen.route)
                     } else {
