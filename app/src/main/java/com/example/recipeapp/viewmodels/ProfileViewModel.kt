@@ -37,16 +37,45 @@ class ProfileViewModel(private val repository: FirestoreRepository) : ViewModel(
         }
     }
 
-    // Add profile data for a user
-    fun addProfileData(userId: String, profile: UserProfile, onSuccess: () -> Unit) {
+    // ProfileViewModel
+    fun updateUserName(userId: String, name: String, onSuccess: () -> Unit) {
         viewModelScope.launch {
             try {
-                repository.addProfileData(userId, profile)
-                Log.d("ProfileViewModel", "Profile data added successfully.")
+                repository.updateUserName(userId, name)
                 onSuccess()
+            } catch (e: Exception) {
+                Log.e("ProfileViewModel", "Error updating username: ${e.message}")
+            }
+        }
+    }
+
+    fun updateUserAllergies(userId: String, allergies: List<String>) {
+        viewModelScope.launch {
+            try {
+                repository.addUserAllergies(userId, allergies)
+                // Log success or perform any additional actions
+            } catch (e: Exception) {
+                // Log error or handle failure
+            }
+        }
+    }
+
+    fun addProfileData(userId: String, name: String, onSuccess: () -> Unit) {
+        viewModelScope.launch {
+            try {
+                val userProfile = repository.getUserProfile(userId)
+                if (userProfile == null || userProfile.name.isNullOrEmpty()) {
+                    repository.addProfileData(userId, UserProfile(name = name))
+                    onSuccess()
+                }
             } catch (e: Exception) {
                 Log.e("ProfileViewModel", "Error adding profile data: ${e.message}")
             }
         }
     }
+
+
 }
+
+
+

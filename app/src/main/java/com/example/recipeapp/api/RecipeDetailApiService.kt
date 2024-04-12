@@ -20,5 +20,3 @@ interface RecipeDetailsApiService {
         }
     }
 }
-
-//TODO:Create a single retrofit instance instead of creating it in every api service.

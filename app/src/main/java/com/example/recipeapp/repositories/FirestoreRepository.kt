@@ -57,7 +57,34 @@ class FirestoreRepository {
         return profileSnapshot.toObject(UserProfile::class.java)
     }
 
-    // Add profile data for a user
+
+    // Add/update user allergies
+    suspend fun addUserAllergies(userId: String, allergies: List<String>) {
+        val profileRef = firestore.collection("users").document(userId)
+            .collection("profiledata").document("profile")
+        profileRef.update("allergies", allergies)
+            .addOnSuccessListener {
+                Log.d(TAG, "Allergies added/updated successfully for user ID: $userId")
+            }
+            .addOnFailureListener { e ->
+                Log.e(TAG, "Error adding/updating allergies for user ID: $userId", e)
+            }
+            .await()
+    }
+
+    suspend fun updateUserName(userId: String, name: String) {
+        val profileRef = firestore.collection("users").document(userId)
+            .collection("profiledata").document("profile")
+        profileRef.update("name", name)
+            .addOnSuccessListener {
+                Log.d(TAG, "Username updated successfully for user ID: $userId")
+            }
+            .addOnFailureListener { e ->
+                Log.e(TAG, "Error updating username for user ID: $userId", e)
+            }
+            .await()
+    }
+
     suspend fun addProfileData(userId: String, profile: UserProfile) {
         try {
             val profileRef = firestore.collection("users").document(userId)
@@ -78,4 +105,7 @@ class FirestoreRepository {
             throw e // Rethrow the exception for further handling if needed
         }
     }
+
 }
+
+

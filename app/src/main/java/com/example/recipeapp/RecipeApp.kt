@@ -37,6 +37,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.example.recipeapp.api.IngredientsApiService
+import com.example.recipeapp.viewmodels.IngredientsViewModel
 import com.example.recipeapp.viewmodels.ProfileViewModel
 import com.example.recipeapp.views.LogoutDialog
 import com.example.recipeapp.views.ProfileScreen
@@ -116,13 +118,16 @@ fun RecipeApp(
                     Log.d("RecipeApp", "Showing RecipeDetailsScreen")
                     val recipeDetailsViewModel: RecipeDetailViewModel = viewModel()
                     val recipeDetailState by recipeDetailsViewModel.recipeDetailState
+                    val profileViewModel =
+                        ProfileViewModel(firestoreRepository)
                     val recipe =
                         navController.previousBackStackEntry?.savedStateHandle?.get<Recipe>("recipe")
                             ?: Recipe("", "", "", "")
                     RecipeDetailScreen(
-                        recipeDetailsViewModel,
+                        profileViewModel = profileViewModel,
                         recipe = recipe,
-                        favoritesViewModel
+                        viewModel = recipeDetailsViewModel,
+                        favoritesViewModel = favoritesViewModel,
                     ) {
                         navController.navigate(Screen.FavoriteRecipesScreen.route) {
                             popUpTo(Screen.RecipeScreen.route) { inclusive = false }
@@ -165,10 +170,10 @@ fun RecipeApp(
                     val userId = FirebaseAuth.getInstance().currentUser?.uid
                     if (userId != null) {
                         val profileViewModel =
-                            ProfileViewModel(firestoreRepository) // Initialize ProfileViewModel
-                        ProfileScreen(userId, profileViewModel,firestoreRepository)
+                            ProfileViewModel(firestoreRepository)
+                        val ingredientsViewModel = IngredientsViewModel(IngredientsApiService.ingredientsApiService)
+                        ProfileScreen(userId, profileViewModel, firestoreRepository, ingredientsViewModel)
                     } else {
-                        // Handle null userId, perhaps navigate to login screen
                         Log.e("RecipeApp", "User ID is null")
                     }
                 }

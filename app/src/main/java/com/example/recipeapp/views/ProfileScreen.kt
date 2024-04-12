@@ -12,6 +12,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -20,17 +21,20 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.recipeapp.data.UserProfile
 import com.example.recipeapp.repositories.FirestoreRepository
+import com.example.recipeapp.viewmodels.IngredientsViewModel
 import com.example.recipeapp.viewmodels.ProfileViewModel
 
 @Composable
 fun ProfileScreen(
     userId: String,
     profileViewModel: ProfileViewModel,
-    firestoreRepository: FirestoreRepository
+    firestoreRepository: FirestoreRepository,
+    ingredientsViewModel: IngredientsViewModel
 ) {
     var isLoading by remember { mutableStateOf(true) }
     var userProfile by remember { mutableStateOf<UserProfile?>(null) }
     var showDialog by remember { mutableStateOf(false) }
+    var showDialogEditAllergies by remember { mutableStateOf(false) } // State for showing the edit allergies dialog
     var userName by remember { mutableStateOf("") }
     var isSavingProfile by remember { mutableStateOf(false) }
 
@@ -38,10 +42,15 @@ fun ProfileScreen(
         profileViewModel.getUserProfile(userId)
     }
 
+    LaunchedEffect(profileViewModel.isLoading) {
+        profileViewModel.isLoading.observeForever {
+            isLoading = it
+        }
+    }
+
     LaunchedEffect(profileViewModel.userProfile) {
         profileViewModel.userProfile.observeForever {
             userProfile = it
-            isLoading = false
         }
     }
 
@@ -53,45 +62,77 @@ fun ProfileScreen(
             // Display loading indicator if data is still loading
             CircularProgressIndicator()
         } else {
-            // Display profile content once data is loaded
-            userProfile?.let { userProfile ->
+            if (userProfile == null) {
+                // If userProfile is null, display the dialog to enter the name
+                showDialog = true
+            } else {
+                // Display profile content once data is loaded
                 ProfileContent(
-                    userProfile = userProfile,
+                    userProfile = userProfile!!,
                     onProfileSaved = {
                         isSavingProfile = true
-                        profileViewModel.addProfileData(userId, userProfile) {
-                            isSavingProfile = false
-                            userProfile.name = userName // Update userProfile directly
-                        }
+                        profileViewModel.updateUserAllergies(userId, userProfile!!.allergies)
+                        // Update userProfile directly
+                        userProfile!!.name = userName
                     },
-                    onEditNameClicked = { showDialog = true }
+                    onEditNameClicked = { showDialog = true },
+                    // Show the edit allergies dialog when clicked
+                    onEditAllergiesClicked = { showDialogEditAllergies = true }
                 )
-            } ?: run {
-                // Display a button to prompt user to enter their name
-                Button(
-                    onClick = { showDialog = true },
-                    modifier = Modifier.padding(16.dp)
-                ) {
-                    Text("Enter Your Name")
-                }
             }
         }
     }
 
-    // Dialog to prompt user to enter their name or edit their existing name
+    // ProfileScreen
     if (showDialog) {
         ProfileDialog(
             currentName = userProfile?.name ?: "", // Pass the current name
             onDismiss = { showDialog = false },
             onSaveProfile = { name ->
-                // Save user profile with entered name
                 userName = name
-                profileViewModel.addProfileData(userId, UserProfile(name = name)) {
-                    showDialog = false
-                    userProfile = UserProfile(name = name) // Update userProfile directly
+                if (userProfile?.name.isNullOrEmpty()) {
+                    // If the user doesn't have a name yet, add profile data
+                    profileViewModel.addProfileData(userId, name) {
+                        showDialog = false
+                        userProfile = UserProfile(name = name) // Update userProfile directly
+                    }
+                } else {
+                    // If the user already has a name, update only the name
+                    profileViewModel.updateUserName(userId, name) {
+                        showDialog = false
+                        userProfile = userProfile?.copy(name = name) // Update userProfile directly
+                    }
                 }
             }
         )
+    }
+
+    // Dialog to edit allergies
+    if (showDialogEditAllergies) {
+        // Fetch ingredients only when the dialog is opened
+        LaunchedEffect(Unit) {
+            ingredientsViewModel.fetchIngredients()
+        }
+
+        // Ensure that ingredients data is available before displaying the dialog
+        val ingredients by ingredientsViewModel.ingredients.observeAsState()
+
+        if (ingredients != null) {
+            AllergiesDialog(
+                selectedAllergies = userProfile?.allergies ?: emptyList(),
+                onDismiss = { showDialogEditAllergies = false },
+                onSaveAllergies = { allergies ->
+                    userProfile?.allergies = allergies.toMutableList() // Update the user's allergies
+                    showDialogEditAllergies = false
+                },
+                ingredientsViewModel = ingredientsViewModel,
+                profileViewModel = profileViewModel,
+                userId = userId
+            )
+        } else {
+            // Display a progress indicator while ingredients are loading
+            CircularProgressIndicator()
+        }
     }
 
     // Show saving indicator
@@ -110,7 +151,8 @@ fun ProfileScreen(
 fun ProfileContent(
     userProfile: UserProfile,
     onProfileSaved: () -> Unit,
-    onEditNameClicked: () -> Unit
+    onEditNameClicked: () -> Unit,
+    onEditAllergiesClicked: () -> Unit
 ) {
     Column(
         modifier = Modifier.padding(16.dp),
@@ -127,6 +169,14 @@ fun ProfileContent(
             modifier = Modifier.padding(top = 16.dp)
         ) {
             Text("Edit Name")
+        }
+
+        // Button to edit allergies
+        Button(
+            onClick = { onEditAllergiesClicked() },
+            modifier = Modifier.padding(top = 16.dp)
+        ) {
+            Text("Edit Allergies")
         }
     }
 }
