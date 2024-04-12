@@ -37,7 +37,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.example.recipeapp.api.IngredientsApiService
+import com.example.recipeapp.viewmodels.IngredientsViewModel
+import com.example.recipeapp.viewmodels.ProfileViewModel
 import com.example.recipeapp.views.LogoutDialog
+import com.example.recipeapp.views.ProfileScreen
+import com.google.firebase.auth.FirebaseAuth
 
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @Composable
@@ -113,13 +118,16 @@ fun RecipeApp(
                     Log.d("RecipeApp", "Showing RecipeDetailsScreen")
                     val recipeDetailsViewModel: RecipeDetailViewModel = viewModel()
                     val recipeDetailState by recipeDetailsViewModel.recipeDetailState
+                    val profileViewModel =
+                        ProfileViewModel(firestoreRepository)
                     val recipe =
                         navController.previousBackStackEntry?.savedStateHandle?.get<Recipe>("recipe")
                             ?: Recipe("", "", "", "")
                     RecipeDetailScreen(
-                        recipeDetailsViewModel,
+                        profileViewModel = profileViewModel,
                         recipe = recipe,
-                        favoritesViewModel
+                        viewModel = recipeDetailsViewModel,
+                        favoritesViewModel = favoritesViewModel,
                     ) {
                         navController.navigate(Screen.FavoriteRecipesScreen.route) {
                             popUpTo(Screen.RecipeScreen.route) { inclusive = false }
@@ -157,6 +165,18 @@ fun RecipeApp(
                     Log.d("RecipeApp", "Showing FavoriteRecipesScreen")
                     FavoriteRecipesScreen(favoritesViewModel)
                 }
+
+                composable(route = Screen.ProfileScreen.route) {
+                    val userId = FirebaseAuth.getInstance().currentUser?.uid
+                    if (userId != null) {
+                        val profileViewModel =
+                            ProfileViewModel(firestoreRepository)
+                        val ingredientsViewModel = IngredientsViewModel(IngredientsApiService.ingredientsApiService)
+                        ProfileScreen(userId, profileViewModel, firestoreRepository, ingredientsViewModel)
+                    } else {
+                        Log.e("RecipeApp", "User ID is null")
+                    }
+                }
             }
 
 
@@ -189,6 +209,9 @@ fun RecipeApp(
                         // Show the logout dialog if the user is on the recipe screen
                         showLogoutDialog = true
                     } else if (currentRoute == Screen.FavoriteRecipesScreen.route) {
+                        Log.d("BackHandler", "Navigate to RecipeScreen")
+                        navController.navigate(Screen.RecipeScreen.route)
+                    } else if (currentRoute == Screen.ProfileScreen.route) {
                         Log.d("BackHandler", "Navigate to RecipeScreen")
                         navController.navigate(Screen.RecipeScreen.route)
                     } else {
