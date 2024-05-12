@@ -116,8 +116,7 @@ fun RecipeApp(
 
                 composable(route = Screen.RecipeDetailsScreen.route) {
                     Log.d("RecipeApp", "Showing RecipeDetailsScreen")
-                    val recipeDetailsViewModel: RecipeDetailViewModel = viewModel()
-                    val recipeDetailState by recipeDetailsViewModel.recipeDetailState
+                    val recipeDetailsViewModel = RecipeDetailViewModel(firestoreRepository)
                     val profileViewModel =
                         ProfileViewModel(firestoreRepository)
                     val recipe =
@@ -128,6 +127,7 @@ fun RecipeApp(
                         recipe = recipe,
                         viewModel = recipeDetailsViewModel,
                         favoritesViewModel = favoritesViewModel,
+                        firestoreRepository = firestoreRepository
                     ) {
                         navController.navigate(Screen.FavoriteRecipesScreen.route) {
                             popUpTo(Screen.RecipeScreen.route) { inclusive = false }

@@ -2,6 +2,8 @@ package com.example.recipeapp.repositories
 
 import android.content.ContentValues.TAG
 import android.util.Log
+import com.example.recipeapp.data.Note
+import com.example.recipeapp.data.RecipeDetails
 import com.example.recipeapp.data.UserProfile
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.tasks.await
@@ -106,6 +108,42 @@ class FirestoreRepository {
         }
     }
 
+    suspend fun addOrUpdateNote(note: Note, userId: String) {
+        firestore.collection("users").document(userId)
+            .collection("notes").document(note.noteId)
+            .set(note)
+            .addOnSuccessListener {
+                Log.d(TAG, "Note added/updated successfully with ID: ${note.noteId}")
+            }
+            .addOnFailureListener { e ->
+                Log.e(TAG, "Error adding/updating note with ID: ${note.noteId}", e)
+            }
+            .await()
+    }
+
+    suspend fun getNotesForRecipeAndUser(recipeId: String, userId: String): List<Note> {
+        val notesSnapshot = firestore.collection("users").document(userId)
+            .collection("notes")
+            .whereEqualTo("recipeId", recipeId)
+            .get()
+            .await()
+        return notesSnapshot.toObjects(Note::class.java)
+    }
+
+    suspend fun deleteNoteById(noteId: String, userId: String) {
+        val noteRef = firestore.collection("users").document(userId)
+            .collection("notes").document(noteId)
+        noteRef.delete()
+            .addOnSuccessListener {
+                Log.d(TAG, "Note deleted successfully: $noteId")
+            }
+            .addOnFailureListener { e ->
+                Log.e(TAG, "Error deleting note: $noteId", e)
+            }
+            .await()
+    }
 }
+
+
 
 
