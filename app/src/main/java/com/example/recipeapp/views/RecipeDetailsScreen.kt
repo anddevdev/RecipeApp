@@ -17,7 +17,6 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.compose.rememberAsyncImagePainter
-import coil.compose.rememberImagePainter
 import com.example.recipeapp.data.Note
 import com.example.recipeapp.data.Recipe
 import com.example.recipeapp.data.RecipeDetails
@@ -46,11 +45,13 @@ fun RecipeDetailScreen(
     val coroutineScope = rememberCoroutineScope()
 
     // Observe recipe detail state
-    var recipeDetailState by remember { mutableStateOf<RecipeDetailViewModel.RecipeDetailState>(
-        RecipeDetailViewModel.RecipeDetailState(
-            loading = true
+    var recipeDetailState by remember {
+        mutableStateOf<RecipeDetailViewModel.RecipeDetailState>(
+            RecipeDetailViewModel.RecipeDetailState(
+                loading = true
+            )
         )
-    ) }
+    }
 
     // State for existing notes
     var existingNotes by remember { mutableStateOf<List<Note>>(emptyList()) }
@@ -67,7 +68,12 @@ fun RecipeDetailScreen(
     LaunchedEffect(recipe) {
         val recipeId = recipe.idMeal
         Log.d("RecipeDetailScreen", "Fetching existing notes for recipe with ID: $recipeId")
-        FirebaseAuth.getInstance().currentUser?.uid?.let { viewModel.getNotesForRecipeAndUser(recipe.idMeal, userId = it) }
+        FirebaseAuth.getInstance().currentUser?.uid?.let {
+            viewModel.getNotesForRecipeAndUser(
+                recipe.idMeal,
+                userId = it
+            )
+        }
         Log.d("RecipeDetailScreen", "Existing notes fetched: $existingNotes")
     }
 
@@ -75,7 +81,12 @@ fun RecipeDetailScreen(
         viewModel.recipeDetailState.observeForever { newRecipeDetailState ->
             recipeDetailState = newRecipeDetailState
         }
-        FirebaseAuth.getInstance().currentUser?.uid?.let { viewModel.fetchRecipeDetailsIfNeeded(recipe.strMeal, userId = it) }
+        FirebaseAuth.getInstance().currentUser?.uid?.let {
+            viewModel.fetchRecipeDetailsIfNeeded(
+                recipe.strMeal,
+                userId = it
+            )
+        }
     }
 
     LaunchedEffect(Unit) {
@@ -99,6 +110,21 @@ fun RecipeDetailScreen(
     profileViewModel.userProfile.observeForever {
         userProfile = it
         loadingProfile = false
+    }
+
+    // Dialog state for editing notes
+    var editingNote by remember { mutableStateOf<Note?>(null) }
+    // Track changes to editingNote
+    LaunchedEffect(editingNote) {
+        Log.d("RecipeDetailScreen", "Editing note: $editingNote")
+    }
+
+    // State for triggering UI updates when notes change
+    var triggerUpdate by remember { mutableStateOf(0) }
+
+    // Observe changes to existingNotes to trigger UI updates
+    LaunchedEffect(existingNotes) {
+        triggerUpdate++ // Increment triggerUpdate to force recomposition
     }
 
     LazyColumn(
@@ -230,9 +256,11 @@ fun RecipeDetailScreen(
                                                 content = notes
                                             )
                                         }
-                                        // Call ViewModel function to add or update the note
+                                        // Call ViewModel function to add the note
                                         if (note != null) {
-                                            viewModel.addOrUpdateNote(note, userId ?: "")
+                                            viewModel.addNote(note, userId ?: "")
+                                            // Clear the text field after adding note
+                                            notes = ""
                                         }
                                     }
                                 },
@@ -291,36 +319,73 @@ fun RecipeDetailScreen(
             ) {
                 LazyColumn {
                     items(existingNotes) { note ->
+                        var isEditing by remember { mutableStateOf(false) }
+                        var editedNote by remember { mutableStateOf(note.content) }
+
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(vertical = 8.dp)
                         ) {
-                            Text(
-                                text = "Note ID: ${note.noteId}",
-                                fontWeight = FontWeight.Bold,
-                                modifier = Modifier.padding(bottom = 4.dp),
-                            )
-                            Text(
-                                text = note.content,
-                                modifier = Modifier.padding(bottom = 4.dp),
-                            )
+                            if (isEditing) {
+                                // Editable TextField
+                                TextField(
+                                    value = editedNote,
+                                    onValueChange = { editedNote = it },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    label = { Text("Edit note") }
+                                )
 
-                            // Edit button
-                            Button(
-                                onClick = {
-                                    // Navigate to the edit note screen
-                                    // Pass the note object to the edit screen
-                                },
-                                modifier = Modifier.align(Alignment.CenterHorizontally)
-                            ) {
-                                Text("Edit")
+                                // Save button
+                                Button(
+                                    onClick = {
+                                        coroutineScope.launch {
+                                            viewModel.updateNote(
+                                                noteId = note.noteId,
+                                                updatedContent = Note(
+                                                    noteId = note.noteId,
+                                                    recipeId = note.recipeId,
+                                                    userId = note.userId,
+                                                    content = editedNote
+                                                ),
+                                                userId = FirebaseAuth.getInstance().currentUser?.uid
+                                                    ?: ""
+                                            )
+                                            // Trigger UI update after saving
+                                            triggerUpdate++
+                                        }
+                                        isEditing = false // Exit editing mode after saving
+                                    },
+                                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                                ) {
+                                    Text("Save")
+                                }
+                            } else {
+                                // Display the note text
+                                Text(
+                                    text = note.content,
+                                    modifier = Modifier.padding(bottom = 4.dp),
+                                )
+
+                                // Edit button
+                                Button(
+                                    onClick = { isEditing = true },
+                                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                                ) {
+                                    Text("Edit")
+                                }
                             }
+
                             Button(
                                 onClick = {
                                     coroutineScope.launch {
                                         // Delete the note from Firestore
-                                        viewModel.deleteNoteById(noteId = note.noteId, userId = note.userId)
+                                        viewModel.deleteNoteById(
+                                            noteId = note.noteId,
+                                            userId = note.userId
+                                        )
+                                        // Trigger UI update after deletion
+                                        triggerUpdate++
                                     }
                                 },
                                 modifier = Modifier.align(Alignment.CenterHorizontally)

@@ -1,5 +1,6 @@
 package com.example.recipeapp.viewmodels
 
+import android.content.ContentValues.TAG
 import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -49,8 +50,23 @@ class RecipeDetailViewModel(private val firestoreRepository: FirestoreRepository
     }
 
     // Add or update a note for the recipe
-    suspend fun addOrUpdateNote(note: Note, userId: String) {
-        firestoreRepository.addOrUpdateNote(note, userId)
+    suspend fun addNote(note: Note, userId: String) {
+        try {
+            firestoreRepository.addNote(note, userId)
+        } catch (e: Exception) {
+            // Handle exception
+            Log.e(TAG, "Error adding note: ${e.message}", e)
+        }
+    }
+
+    suspend fun updateNote(noteId: String, updatedContent: Note, userId: String) {
+        try {
+            firestoreRepository.updateNote(userId, noteId, updatedContent)
+            Log.d("NOTEUPDATE", "UPDATEDNOTE: $updatedContent , NOTEID: $noteId , USERID: $userId")
+        } catch (e: Exception) {
+            // Handle exception
+            Log.e(TAG, "Error updating note: ${e.message}", e)
+        }
     }
 
     // Fetch existing notes for the recipe and the current user

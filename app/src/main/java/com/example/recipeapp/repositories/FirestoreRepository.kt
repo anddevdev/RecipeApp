@@ -3,9 +3,9 @@ package com.example.recipeapp.repositories
 import android.content.ContentValues.TAG
 import android.util.Log
 import com.example.recipeapp.data.Note
-import com.example.recipeapp.data.RecipeDetails
 import com.example.recipeapp.data.UserProfile
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.SetOptions
 import kotlinx.coroutines.tasks.await
 
 class FirestoreRepository {
@@ -108,17 +108,34 @@ class FirestoreRepository {
         }
     }
 
-    suspend fun addOrUpdateNote(note: Note, userId: String) {
-        firestore.collection("users").document(userId)
+    suspend fun addNote(note: Note, userId: String) {
+        val noteRef = firestore.collection("users").document(userId)
             .collection("notes").document(note.noteId)
-            .set(note)
+        noteRef.set(note)
             .addOnSuccessListener {
-                Log.d(TAG, "Note added/updated successfully with ID: ${note.noteId}")
+                Log.d(TAG, "Note added successfully with ID: ${note.noteId}")
             }
             .addOnFailureListener { e ->
-                Log.e(TAG, "Error adding/updating note with ID: ${note.noteId}", e)
+                Log.e(TAG, "Error adding note with ID: ${note.noteId}", e)
             }
             .await()
+    }
+
+    suspend fun updateNote(userId: String, noteId: String, updatedContent: Note) {
+        try {
+            val noteRef = firestore.collection("users").document(userId)
+                .collection("notes").document(noteId)
+            noteRef.set(updatedContent, SetOptions.merge())
+                .addOnSuccessListener {
+                    Log.d(TAG, "Note updated successfully with ID: $noteId")
+                }
+                .addOnFailureListener { e ->
+                    Log.e(TAG, "Error updating note with ID: $noteId", e)
+                }
+                .await()
+        } catch (e: Exception) {
+            Log.e(TAG, "Error updating note: ${e.message}", e)
+        }
     }
 
     suspend fun getNotesForRecipeAndUser(recipeId: String, userId: String): List<Note> {
