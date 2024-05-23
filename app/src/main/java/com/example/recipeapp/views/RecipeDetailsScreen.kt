@@ -311,86 +311,93 @@ fun RecipeDetailScreen(
             }
         }
         item {
-            // Display existing notes
+            // Display existing notes or message if there are no notes
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(200.dp)
             ) {
-                LazyColumn {
-                    items(existingNotes) { note ->
-                        var isEditing by remember { mutableStateOf(false) }
-                        var editedNote by remember { mutableStateOf(note.content) }
+                if (existingNotes.isEmpty()) {
+                    Text(
+                        text = "You have not yet added any notes.",
+                        modifier = Modifier.align(Alignment.Center)
+                    )
+                } else {
+                    LazyColumn {
+                        items(existingNotes) { note ->
+                            var isEditing by remember { mutableStateOf(false) }
+                            var editedNote by remember { mutableStateOf(note.content) }
 
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 8.dp)
-                        ) {
-                            if (isEditing) {
-                                // Editable TextField
-                                TextField(
-                                    value = editedNote,
-                                    onValueChange = { editedNote = it },
-                                    modifier = Modifier.fillMaxWidth(),
-                                    label = { Text("Edit note") }
-                                )
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 8.dp)
+                            ) {
+                                if (isEditing) {
+                                    // Editable TextField
+                                    TextField(
+                                        value = editedNote,
+                                        onValueChange = { editedNote = it },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        label = { Text("Edit note") }
+                                    )
 
-                                // Save button
+                                    // Save button
+                                    Button(
+                                        onClick = {
+                                            coroutineScope.launch {
+                                                viewModel.updateNote(
+                                                    noteId = note.noteId,
+                                                    updatedContent = Note(
+                                                        noteId = note.noteId,
+                                                        recipeId = note.recipeId,
+                                                        userId = note.userId,
+                                                        content = editedNote
+                                                    ),
+                                                    userId = FirebaseAuth.getInstance().currentUser?.uid
+                                                        ?: ""
+                                                )
+                                                // Trigger UI update after saving
+                                                triggerUpdate++
+                                            }
+                                            isEditing = false // Exit editing mode after saving
+                                        },
+                                        modifier = Modifier.align(Alignment.CenterHorizontally)
+                                    ) {
+                                        Text("Save")
+                                    }
+                                } else {
+                                    // Display the note text
+                                    Text(
+                                        text = note.content,
+                                        modifier = Modifier.padding(bottom = 4.dp),
+                                    )
+
+                                    // Edit button
+                                    Button(
+                                        onClick = { isEditing = true },
+                                        modifier = Modifier.align(Alignment.CenterHorizontally)
+                                    ) {
+                                        Text("Edit")
+                                    }
+                                }
+
                                 Button(
                                     onClick = {
                                         coroutineScope.launch {
-                                            viewModel.updateNote(
+                                            // Delete the note from Firestore
+                                            viewModel.deleteNoteById(
                                                 noteId = note.noteId,
-                                                updatedContent = Note(
-                                                    noteId = note.noteId,
-                                                    recipeId = note.recipeId,
-                                                    userId = note.userId,
-                                                    content = editedNote
-                                                ),
-                                                userId = FirebaseAuth.getInstance().currentUser?.uid
-                                                    ?: ""
+                                                userId = note.userId
                                             )
-                                            // Trigger UI update after saving
+                                            // Trigger UI update after deletion
                                             triggerUpdate++
                                         }
-                                        isEditing = false // Exit editing mode after saving
                                     },
                                     modifier = Modifier.align(Alignment.CenterHorizontally)
                                 ) {
-                                    Text("Save")
+                                    Text("Delete")
                                 }
-                            } else {
-                                // Display the note text
-                                Text(
-                                    text = note.content,
-                                    modifier = Modifier.padding(bottom = 4.dp),
-                                )
-
-                                // Edit button
-                                Button(
-                                    onClick = { isEditing = true },
-                                    modifier = Modifier.align(Alignment.CenterHorizontally)
-                                ) {
-                                    Text("Edit")
-                                }
-                            }
-
-                            Button(
-                                onClick = {
-                                    coroutineScope.launch {
-                                        // Delete the note from Firestore
-                                        viewModel.deleteNoteById(
-                                            noteId = note.noteId,
-                                            userId = note.userId
-                                        )
-                                        // Trigger UI update after deletion
-                                        triggerUpdate++
-                                    }
-                                },
-                                modifier = Modifier.align(Alignment.CenterHorizontally)
-                            ) {
-                                Text("Delete")
                             }
                         }
                     }

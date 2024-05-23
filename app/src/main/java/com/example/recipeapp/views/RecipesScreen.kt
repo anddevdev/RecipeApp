@@ -7,13 +7,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -28,27 +23,45 @@ import com.example.recipeapp.viewmodels.RecipeViewModel
 @Composable
 fun RecipesScreen(viewModel: RecipeViewModel, category: Category, onRecipeClick: (Recipe) -> Unit) {
     val recipesState by viewModel.recipesState
+    var searchQuery by remember { mutableStateOf("") }
 
     LaunchedEffect(category) {
         viewModel.fetchRecipesByCategory(category.strCategory)
+    }
+
+    // Filter recipes based on search query
+    val filteredRecipes = recipesState.list.filter {
+        it.strMeal.contains(searchQuery, ignoreCase = true)
     }
 
     Surface(
         modifier = Modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background
     ) {
-        Box(modifier = Modifier.fillMaxSize()) {
-            when {
-                recipesState.loading -> {
-                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-                }
-                recipesState.error != null -> {
-                    Text("Error Occurred")
-                }
-                else -> {
-                    LazyColumn {
-                        items(recipesState.list) { recipe ->
-                            RecipeItem(recipe = recipe ,onRecipeClick = onRecipeClick)
+        Column {
+            // Search bar
+            TextField(
+                value = searchQuery,
+                onValueChange = { searchQuery = it },
+                label = { Text("Search recipes") },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+            )
+
+            Box(modifier = Modifier.fillMaxSize()) {
+                when {
+                    recipesState.loading -> {
+                        CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                    }
+                    recipesState.error != null -> {
+                        Text("Error Occurred", modifier = Modifier.align(Alignment.Center))
+                    }
+                    else -> {
+                        LazyColumn {
+                            items(filteredRecipes) { recipe ->
+                                RecipeItem(recipe = recipe, onRecipeClick = onRecipeClick)
+                            }
                         }
                     }
                 }
@@ -92,6 +105,3 @@ fun RecipeItem(recipe: Recipe , onRecipeClick: (Recipe) -> Unit) {
         )
     }
 }
-
-
-
