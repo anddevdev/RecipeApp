@@ -42,6 +42,7 @@ import com.example.recipeapp.viewmodels.IngredientsViewModel
 import com.example.recipeapp.viewmodels.ProfileViewModel
 import com.example.recipeapp.views.LogoutDialog
 import com.example.recipeapp.views.ProfileScreen
+import com.example.recipeapp.views.RecommendationsScreen
 import com.google.firebase.auth.FirebaseAuth
 
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
@@ -121,7 +122,7 @@ fun RecipeApp(
                         ProfileViewModel(firestoreRepository)
                     val recipe =
                         navController.previousBackStackEntry?.savedStateHandle?.get<Recipe>("recipe")
-                            ?: Recipe("", "", "", "")
+                            ?: Recipe("", "", "", "","")
                     RecipeDetailScreen(
                         profileViewModel = profileViewModel,
                         recipe = recipe,
@@ -176,6 +177,15 @@ fun RecipeApp(
                     } else {
                         Log.e("RecipeApp", "User ID is null")
                     }
+                }
+
+                composable(route = Screen.RecommendationsScreen.route) {
+                    RecommendationsScreen(
+                        onRecipeClick = { recipe ->
+                            navController.currentBackStackEntry?.savedStateHandle?.set("recipe", recipe)
+                            navController.navigate(Screen.RecipeDetailsScreen.route)
+                        }
+                    )
                 }
             }
 

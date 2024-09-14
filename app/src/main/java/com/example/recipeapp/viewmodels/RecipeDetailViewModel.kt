@@ -14,6 +14,8 @@ import kotlinx.coroutines.launch
 
 class RecipeDetailViewModel(private val firestoreRepository: FirestoreRepository) : ViewModel() {
 
+    private val recipeDetailsApiService: RecipeDetailsApiService = RecipeDetailsApiService.instance
+
     private val _recipeDetailState = MutableLiveData<RecipeDetailState>()
     val recipeDetailState: LiveData<RecipeDetailState> = _recipeDetailState
 
@@ -34,7 +36,7 @@ class RecipeDetailViewModel(private val firestoreRepository: FirestoreRepository
         viewModelScope.launch {
             try {
                 Log.d("RecipeDetailsViewModel", "Fetching details for recipe: $recipeName")
-                val response = RecipeDetailsApiService.recipeDetailApiService.getRecipeByName(recipeName)
+                val response = recipeDetailsApiService.getRecipeByName(recipeName)
                 Log.d("RecipeDetailsViewModel", "Response: $response")
                 val recipe = response.meals.firstOrNull()
                 if (recipe != null) {

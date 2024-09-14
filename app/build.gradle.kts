@@ -70,8 +70,8 @@ dependencies {
     implementation("androidx.compose.material3:material3")
     implementation ("androidx.compose.runtime:runtime-livedata:1.6.3")
     testImplementation("junit:junit:4.13.2")
-    androidTestImplementation("androidx.test.ext:junit:1.1.5")
-    androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
+    androidTestImplementation("androidx.test.ext:junit:1.2.1")
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
     androidTestImplementation(platform("androidx.compose:compose-bom:2024.02.02"))
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
     debugImplementation("androidx.compose.ui:ui-tooling")
@@ -79,6 +79,7 @@ dependencies {
     implementation(platform("com.google.firebase:firebase-bom:32.7.4"))
     implementation ("com.google.firebase:firebase-auth-ktx:22.3.1")
     implementation ("com.google.firebase:firebase-firestore")
-    implementation("androidx.compose.material:material:1.6.3")
+    implementation("androidx.compose.material:material:1.7.1")
+    implementation ("org.jetbrains.kotlin:kotlin-reflect")
 
 }

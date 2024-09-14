@@ -56,10 +56,10 @@ fun RegisterScreen(
             value = password,
             onValueChange = {
                 password = it
-                passwordError = if (it.isNotBlank() && it.length >= 6) {
+                passwordError = if (it.length >= 8 && it.count { char -> char.isDigit() } >= 2) {
                     null
                 } else {
-                    "Password must be at least 6 characters"
+                    "Password must be at least 8 characters and 2 digits"
                 }
             },
             label = { Text("Password") },

@@ -7,6 +7,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -22,6 +23,7 @@ fun BottomNavigationBar(navController: NavController) {
     val bottomNavigationItems = listOf(
         Screen.RecipeScreen.route to Icons.Default.Home,
         Screen.FavoriteRecipesScreen.route to Icons.Default.Favorite,
+        Screen.RecommendationsScreen.route to Icons.Default.Star,
         Screen.ProfileScreen.route to Icons.Default.Person
     )
 

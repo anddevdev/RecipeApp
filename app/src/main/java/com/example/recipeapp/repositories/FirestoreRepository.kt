@@ -2,13 +2,18 @@ package com.example.recipeapp.repositories
 
 import android.content.ContentValues.TAG
 import android.util.Log
+import com.example.recipeapp.api.RecipeDetailsApiService
 import com.example.recipeapp.data.Note
+import com.example.recipeapp.data.Recipe
 import com.example.recipeapp.data.UserProfile
+import com.example.recipeapp.data.toRecipe
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
 import kotlinx.coroutines.tasks.await
 
-class FirestoreRepository {
+class FirestoreRepository(
+    private val recipeDetailsApiService: RecipeDetailsApiService
+) {
 
     private val firestore = FirebaseFirestore.getInstance()
 
@@ -158,6 +163,22 @@ class FirestoreRepository {
                 Log.e(TAG, "Error deleting note: $noteId", e)
             }
             .await()
+    }
+
+    suspend fun getFavoriteRecipesWithDetails(userId: String): List<Recipe> {
+        val favoriteRecipes = getFavorites(userId)
+        val recipes = mutableListOf<Recipe>()
+
+        for ((recipeName, _, _) in favoriteRecipes) {
+            val recipeDetailsResponse = recipeDetailsApiService.getRecipeByName(recipeName)
+            val matchingRecipes = recipeDetailsResponse.meals.filter { it.strMeal == recipeName }
+            val recipeDetails = matchingRecipes.firstOrNull()
+            recipeDetails?.let {
+                val recipe = it.toRecipe() // Convert RecipeDetails to Recipe
+                recipes.add(recipe)
+            }
+        }
+        return recipes
     }
 }
 

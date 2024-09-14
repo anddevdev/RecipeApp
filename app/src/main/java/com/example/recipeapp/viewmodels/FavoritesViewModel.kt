@@ -6,7 +6,7 @@ import com.example.recipeapp.repositories.FirestoreRepository
 class FavoritesViewModel(private val firestoreRepository: FirestoreRepository) : ViewModel() {
     
     suspend fun addFavorite(userId: String, recipeId: String, thumbnailUrl: String, category: String) {
-        firestoreRepository.addFavorite(userId, recipeId, thumbnailUrl,category)
+        firestoreRepository.addFavorite(userId, recipeId, thumbnailUrl, category)
     }
 
     suspend fun removeFavorite(userId: String, recipeId: String) {

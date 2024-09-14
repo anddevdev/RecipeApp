@@ -56,3 +56,13 @@ data class RecipeDetails(
     ) : Parcelable
 
 data class RecipeDetailsResponse(val meals: List<RecipeDetails>)
+
+fun RecipeDetails.toRecipe(): Recipe {
+    return Recipe(
+        idMeal = this.idMeal,
+        strMeal = this.strMeal,
+        strMealThumb = this.strMealThumb,
+        strInstructions = this.strInstructions,
+        strCategory = this.strCategory
+    )
+}

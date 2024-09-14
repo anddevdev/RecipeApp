@@ -12,6 +12,8 @@ import kotlinx.coroutines.launch
 
 class RecipeViewModel : ViewModel() {
 
+    private val recipeApiService: RecipeApiService = RecipeApiService.instance
+
     private val _recipesState = mutableStateOf(RecipesState())
 
     val recipesState: State<RecipesState> = _recipesState
@@ -22,7 +24,7 @@ fun fetchRecipesByCategory(category: String) {
     viewModelScope.launch {
         try {
             Log.d("RecipeViewModel", "Fetching recipes for category: $category")
-            val response = RecipeApiService.recipeApiService.getRecipesByCategory(category)
+            val response = recipeApiService.getRecipesByCategory(category)
             _recipesState.value = _recipesState.value.copy(
                 list = response.meals ?: emptyList(),
                 loading = false,

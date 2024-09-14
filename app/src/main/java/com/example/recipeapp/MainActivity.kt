@@ -8,6 +8,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.rememberNavController
+import com.example.recipeapp.api.RecipeDetailsApiService
 import com.example.recipeapp.repositories.FirestoreRepository
 import com.example.recipeapp.viewmodels.LoginViewModel
 import com.example.recipeapp.viewmodels.RegistrationViewModel
@@ -28,7 +29,7 @@ class MainActivity : ComponentActivity() {
                 navController = navController,
                 loginViewModel = loginViewModel,
                 registrationViewModel = registrationViewModel,
-                firestoreRepository = FirestoreRepository(),
+                firestoreRepository = FirestoreRepository(RecipeDetailsApiService.instance),
 
             )
 

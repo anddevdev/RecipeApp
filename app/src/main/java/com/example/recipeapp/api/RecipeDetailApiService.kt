@@ -10,13 +10,16 @@ interface RecipeDetailsApiService {
     @GET("search.php")
     suspend fun getRecipeByName(@Query("s") mealStr: String): RecipeDetailsResponse
 
-    companion object {
-        private val retrofit = Retrofit.Builder().baseUrl("https://www.themealdb.com/api/json/v1/1/")
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
+    @GET("lookup.php")
+    suspend fun getRecipeById(@Query("i") id: String): RecipeDetailsResponse?
 
-        val recipeDetailApiService: RecipeDetailsApiService by lazy {
-            retrofit.create(RecipeDetailsApiService::class.java)
+    companion object {
+        val instance: RecipeDetailsApiService by lazy {
+            Retrofit.Builder()
+                .baseUrl("https://www.themealdb.com/api/json/v1/1/")
+                .addConverterFactory(GsonConverterFactory.create())
+                .build()
+                .create(RecipeDetailsApiService::class.java)
         }
     }
 }
