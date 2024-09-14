@@ -2,8 +2,10 @@ package com.example.recipeapp.repositories
 
 import android.content.ContentValues.TAG
 import android.util.Log
+import com.example.recipeapp.data.Note
 import com.example.recipeapp.data.UserProfile
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.SetOptions
 import kotlinx.coroutines.tasks.await
 
 class FirestoreRepository {
@@ -106,6 +108,59 @@ class FirestoreRepository {
         }
     }
 
+    suspend fun addNote(note: Note, userId: String) {
+        val noteRef = firestore.collection("users").document(userId)
+            .collection("notes").document(note.noteId)
+        noteRef.set(note)
+            .addOnSuccessListener {
+                Log.d(TAG, "Note added successfully with ID: ${note.noteId}")
+            }
+            .addOnFailureListener { e ->
+                Log.e(TAG, "Error adding note with ID: ${note.noteId}", e)
+            }
+            .await()
+    }
+
+    suspend fun updateNote(userId: String, noteId: String, updatedContent: Note) {
+        try {
+            val noteRef = firestore.collection("users").document(userId)
+                .collection("notes").document(noteId)
+            noteRef.set(updatedContent, SetOptions.merge())
+                .addOnSuccessListener {
+                    Log.d(TAG, "Note updated successfully with ID: $noteId")
+                }
+                .addOnFailureListener { e ->
+                    Log.e(TAG, "Error updating note with ID: $noteId", e)
+                }
+                .await()
+        } catch (e: Exception) {
+            Log.e(TAG, "Error updating note: ${e.message}", e)
+        }
+    }
+
+    suspend fun getNotesForRecipeAndUser(recipeId: String, userId: String): List<Note> {
+        val notesSnapshot = firestore.collection("users").document(userId)
+            .collection("notes")
+            .whereEqualTo("recipeId", recipeId)
+            .get()
+            .await()
+        return notesSnapshot.toObjects(Note::class.java)
+    }
+
+    suspend fun deleteNoteById(noteId: String, userId: String) {
+        val noteRef = firestore.collection("users").document(userId)
+            .collection("notes").document(noteId)
+        noteRef.delete()
+            .addOnSuccessListener {
+                Log.d(TAG, "Note deleted successfully: $noteId")
+            }
+            .addOnFailureListener { e ->
+                Log.e(TAG, "Error deleting note: $noteId", e)
+            }
+            .await()
+    }
 }
+
+
 
 

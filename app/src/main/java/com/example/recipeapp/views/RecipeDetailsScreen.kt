@@ -1,35 +1,33 @@
 package com.example.recipeapp.views
 
-
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.compose.rememberAsyncImagePainter
-import com.example.recipeapp.viewmodels.RecipeDetailViewModel
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.TextStyle
+import com.example.recipeapp.data.Note
 import com.example.recipeapp.data.Recipe
 import com.example.recipeapp.data.RecipeDetails
 import com.example.recipeapp.data.UserProfile
+import com.example.recipeapp.repositories.FirestoreRepository
 import com.example.recipeapp.viewmodels.FavoritesViewModel
 import com.example.recipeapp.viewmodels.ProfileViewModel
+import com.example.recipeapp.viewmodels.RecipeDetailViewModel
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.launch
+import java.util.UUID
 
 @Composable
 fun RecipeDetailScreen(
@@ -37,17 +35,58 @@ fun RecipeDetailScreen(
     recipe: Recipe,
     favoritesViewModel: FavoritesViewModel,
     profileViewModel: ProfileViewModel,
+    firestoreRepository: FirestoreRepository,
     navigateToFavoriteRecipes: () -> Unit
 ) {
     var isFavorite by remember { mutableStateOf(false) }
     var loadingProfile by remember { mutableStateOf(true) }
+    var notes by remember { mutableStateOf("") }
 
     val coroutineScope = rememberCoroutineScope()
 
-    val recipeDetailState = viewModel.recipeDetailState.value
+    // Observe recipe detail state
+    var recipeDetailState by remember {
+        mutableStateOf<RecipeDetailViewModel.RecipeDetailState>(
+            RecipeDetailViewModel.RecipeDetailState(
+                loading = true
+            )
+        )
+    }
+
+    // State for existing notes
+    var existingNotes by remember { mutableStateOf<List<Note>>(emptyList()) }
+
+    // Observe existing notes
+    LaunchedEffect(viewModel.existingNotes) {
+        viewModel.existingNotes.observeForever { notes ->
+            existingNotes = notes
+            Log.d("RecipeDetailScreen", "Existing notes observed: $notes")
+        }
+    }
+
+    // Fetch existing notes for the recipe
+    LaunchedEffect(recipe) {
+        val recipeId = recipe.idMeal
+        Log.d("RecipeDetailScreen", "Fetching existing notes for recipe with ID: $recipeId")
+        FirebaseAuth.getInstance().currentUser?.uid?.let {
+            viewModel.getNotesForRecipeAndUser(
+                recipe.idMeal,
+                userId = it
+            )
+        }
+        Log.d("RecipeDetailScreen", "Existing notes fetched: $existingNotes")
+    }
 
     LaunchedEffect(recipe) {
-        viewModel.fetchRecipeDetailsIfNeeded(recipe.strMeal)
+        viewModel.recipeDetailState.observeForever { newRecipeDetailState ->
+            recipeDetailState = newRecipeDetailState
+        }
+        FirebaseAuth.getInstance().currentUser?.uid?.let {
+            viewModel.fetchRecipeDetailsIfNeeded(
+                recipe.strMeal,
+                userId = it
+            )
+        }
     }
 
     LaunchedEffect(Unit) {
@@ -71,6 +110,21 @@ fun RecipeDetailScreen(
     profileViewModel.userProfile.observeForever {
         userProfile = it
         loadingProfile = false
+    }
+
+    // Dialog state for editing notes
+    var editingNote by remember { mutableStateOf<Note?>(null) }
+    // Track changes to editingNote
+    LaunchedEffect(editingNote) {
+        Log.d("RecipeDetailScreen", "Editing note: $editingNote")
+    }
+
+    // State for triggering UI updates when notes change
+    var triggerUpdate by remember { mutableStateOf(0) }
+
+    // Observe changes to existingNotes to trigger UI updates
+    LaunchedEffect(existingNotes) {
+        triggerUpdate++ // Increment triggerUpdate to force recomposition
     }
 
     LazyColumn(
@@ -179,6 +233,42 @@ fun RecipeDetailScreen(
                                 }
                             }
 
+                            // Text field for adding notes
+                            TextField(
+                                value = notes,
+                                onValueChange = { notes = it },
+                                label = { Text("Add Notes") }
+                            )
+
+                            Button(
+                                onClick = {
+                                    coroutineScope.launch {
+                                        // For demonstration, print the notes
+                                        println("Notes: $notes")
+                                        // Create a Note object
+                                        val noteId = UUID.randomUUID().toString()
+                                        val userId = FirebaseAuth.getInstance().currentUser?.uid
+                                        val note = userId?.let {
+                                            Note(
+                                                noteId = noteId,
+                                                recipeId = recipeDetailState.recipe?.idMeal ?: "",
+                                                userId = it,
+                                                content = notes
+                                            )
+                                        }
+                                        // Call ViewModel function to add the note
+                                        if (note != null) {
+                                            viewModel.addNote(note, userId ?: "")
+                                            // Clear the text field after adding note
+                                            notes = ""
+                                        }
+                                    }
+                                },
+                                modifier = Modifier.padding(top = 16.dp)
+                            ) {
+                                Text("Save Notes")
+                            }
+
                             Button(
                                 onClick = {
                                     coroutineScope.launch {
@@ -221,6 +311,100 @@ fun RecipeDetailScreen(
             }
         }
         item {
+            // Display existing notes or message if there are no notes
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp)
+            ) {
+                if (existingNotes.isEmpty()) {
+                    Text(
+                        text = "You have not yet added any notes.",
+                        modifier = Modifier.align(Alignment.Center)
+                    )
+                } else {
+                    LazyColumn {
+                        items(existingNotes) { note ->
+                            var isEditing by remember { mutableStateOf(false) }
+                            var editedNote by remember { mutableStateOf(note.content) }
+
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 8.dp)
+                            ) {
+                                if (isEditing) {
+                                    // Editable TextField
+                                    TextField(
+                                        value = editedNote,
+                                        onValueChange = { editedNote = it },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        label = { Text("Edit note") }
+                                    )
+
+                                    // Save button
+                                    Button(
+                                        onClick = {
+                                            coroutineScope.launch {
+                                                viewModel.updateNote(
+                                                    noteId = note.noteId,
+                                                    updatedContent = Note(
+                                                        noteId = note.noteId,
+                                                        recipeId = note.recipeId,
+                                                        userId = note.userId,
+                                                        content = editedNote
+                                                    ),
+                                                    userId = FirebaseAuth.getInstance().currentUser?.uid
+                                                        ?: ""
+                                                )
+                                                // Trigger UI update after saving
+                                                triggerUpdate++
+                                            }
+                                            isEditing = false // Exit editing mode after saving
+                                        },
+                                        modifier = Modifier.align(Alignment.CenterHorizontally)
+                                    ) {
+                                        Text("Save")
+                                    }
+                                } else {
+                                    // Display the note text
+                                    Text(
+                                        text = note.content,
+                                        modifier = Modifier.padding(bottom = 4.dp),
+                                    )
+
+                                    // Edit button
+                                    Button(
+                                        onClick = { isEditing = true },
+                                        modifier = Modifier.align(Alignment.CenterHorizontally)
+                                    ) {
+                                        Text("Edit")
+                                    }
+                                }
+
+                                Button(
+                                    onClick = {
+                                        coroutineScope.launch {
+                                            // Delete the note from Firestore
+                                            viewModel.deleteNoteById(
+                                                noteId = note.noteId,
+                                                userId = note.userId
+                                            )
+                                            // Trigger UI update after deletion
+                                            triggerUpdate++
+                                        }
+                                    },
+                                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                                ) {
+                                    Text("Delete")
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        item {
             // Button to navigate to favorite recipes screen
             Button(
                 onClick = { navigateToFavoriteRecipes() },
@@ -235,7 +419,6 @@ fun RecipeDetailScreen(
         }
     }
 }
-
 
 // Extension functions for RecipeDetails to access ingredients and measures
 fun RecipeDetails.getIngredient(index: Int): String? {
@@ -289,5 +472,3 @@ fun RecipeDetails.getMeasure(index: Int): String? {
         else -> null
     }
 }
-
-
