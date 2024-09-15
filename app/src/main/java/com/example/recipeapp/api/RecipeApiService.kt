@@ -10,6 +10,9 @@ interface RecipeApiService {
     @GET("filter.php")
     suspend fun getRecipesByCategory(@Query("c") category: String): RecipesResponse
 
+    @GET("filter.php")
+    suspend fun getRecipesByIngredient(@Query("i") ingredient: String): RecipesResponse
+
     companion object {
         val instance: RecipeApiService by lazy {
             Retrofit.Builder()

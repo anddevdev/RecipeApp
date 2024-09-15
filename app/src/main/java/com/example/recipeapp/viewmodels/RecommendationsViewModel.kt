@@ -26,6 +26,13 @@ class RecommendationsViewModel : ViewModel() {
     private val _loading = MutableStateFlow(false)
     val loading: StateFlow<Boolean> get() = _loading
 
+    private val _showingDefaultRecommendations = MutableStateFlow(false)
+    val showingDefaultRecommendations: StateFlow<Boolean> get() = _showingDefaultRecommendations
+
+    private var cachedFavoriteRecipes: List<Recipe> = emptyList()
+    private var cachedPreferences: UserPreferences? = null
+    private var cachedRecommendations: List<Recipe> = emptyList()
+
     init {
         firestoreRepository = FirestoreRepository(recipeDetailsApiService)
     }
@@ -40,18 +47,33 @@ class RecommendationsViewModel : ViewModel() {
                 val favoriteRecipes = firestoreRepository.getFavoriteRecipesWithDetails(userId)
                 Log.d("RecommendationsViewModel", "Favorite Recipes: $favoriteRecipes")
 
-                if (favoriteRecipes.isNotEmpty()) {
-                    val preferences = analyzePreferences(favoriteRecipes)
-                    Log.d("RecommendationsViewModel", "User Preferences: $preferences")
+                // Do not re-analyze the recipes each time user enters this screen.
+                if (cachedFavoriteRecipes.isEmpty() || favoriteRecipes != cachedFavoriteRecipes) {
+                    cachedFavoriteRecipes = favoriteRecipes
 
-                    val recommendations = getRecommendations(preferences, favoriteRecipes)
-                    Log.d("RecommendationsViewModel", "Recommendations: $recommendations")
+                    if (favoriteRecipes.isNotEmpty()) {
+                        _showingDefaultRecommendations.value = false
+                        val preferences = analyzePreferences(favoriteRecipes)
+                        cachedPreferences = preferences
+                        Log.d("RecommendationsViewModel", "User Preferences: $preferences")
 
-                    _recommendedRecipes.value = recommendations
+                        //Limit the number of displayed recommended recipes and enhance recommendation logic.
+                        val recommendations = getRecommendations(preferences, favoriteRecipes)
+                        cachedRecommendations = recommendations
+                        Log.d("RecommendationsViewModel", "Recommendations: $recommendations")
+
+                        _recommendedRecipes.value = recommendations
+                    } else {
+                        _showingDefaultRecommendations.value = true
+                        val defaultRecommendations = getDefaultRecommendations()
+                        cachedRecommendations = defaultRecommendations
+                        Log.d("RecommendationsViewModel", "Default Recommendations: $defaultRecommendations")
+                        _recommendedRecipes.value = defaultRecommendations
+                    }
                 } else {
-                    val defaultRecommendations = getDefaultRecommendations()
-                    Log.d("RecommendationsViewModel", "Default Recommendations: $defaultRecommendations")
-                    _recommendedRecipes.value = defaultRecommendations
+                    // Favorites haven't changed, use cached recommendations
+                    Log.d("RecommendationsViewModel", "Using cached recommendations")
+                    _recommendedRecipes.value = cachedRecommendations
                 }
             } else {
                 Log.e("RecommendationsViewModel", "User ID is null")
@@ -62,32 +84,73 @@ class RecommendationsViewModel : ViewModel() {
 
     private suspend fun getRecommendations(
         preferences: UserPreferences,
-        favoriteRecipes: List<Recipe>
+        favoriteRecipes: List<Recipe>,
+        maxRecommendations: Int = 10 //Limit the number of displayed recommended recipes
     ): List<Recipe> {
-        val recommendedRecipes = mutableSetOf<Recipe>()
-        val favoriteRecipeNames = favoriteRecipes.map { it.strMeal }
+        val recommendedRecipes = mutableMapOf<Recipe, Int>()
+        val favoriteRecipeIds = favoriteRecipes.map { it.idMeal }.toSet()
 
-        // Fetch recipes by top categories
+        val allPotentialRecipes = mutableMapOf<String, RecipeDetails>() // Map idMeal to RecipeDetails
+
+        // Enhance the recommendation logic by fetching recipes based on both favorite categories and ingredients.
+        // Fetch recipes by favorite categories
         for (category in preferences.favoriteCategories.take(3)) {
             val response = recipeApiService.getRecipesByCategory(category)
             response.meals.let { meals ->
                 meals.forEach { meal ->
-                    if (meal.strMeal !in favoriteRecipeNames) {
-                        val recipeDetailResponse = recipeDetailsApiService.getRecipeByName(meal.strMeal)
-                        val matchingRecipes = recipeDetailResponse.meals.filter { it.strMeal == meal.strMeal }
-                        val detailedRecipe = matchingRecipes.firstOrNull()
+                    if (meal.idMeal !in favoriteRecipeIds && meal.idMeal !in allPotentialRecipes.keys) {
+                        val recipeDetailResponse = recipeDetailsApiService.getRecipeById(meal.idMeal)
+                        val detailedRecipe = recipeDetailResponse?.meals?.firstOrNull()
                         detailedRecipe?.let { recipeDetails ->
-                            val recipe = recipeDetails.toRecipe()
-                            recommendedRecipes.add(recipe)
+                            allPotentialRecipes[meal.idMeal] = recipeDetails
                         }
                     }
                 }
             }
         }
 
-        return recommendedRecipes.toList()
+        // Fetch recipes by favorite ingredients
+        for (ingredient in preferences.favoriteIngredients.take(5)) {
+            val response = recipeApiService.getRecipesByIngredient(ingredient)
+            response.meals.let { meals ->
+                meals.forEach { meal ->
+                    if (meal.idMeal !in favoriteRecipeIds && meal.idMeal !in allPotentialRecipes.keys) {
+                        val recipeDetailResponse = recipeDetailsApiService.getRecipeById(meal.idMeal)
+                        val detailedRecipe = recipeDetailResponse?.meals?.firstOrNull()
+                        detailedRecipe?.let { recipeDetails ->
+                            allPotentialRecipes[meal.idMeal] = recipeDetails
+                        }
+                    }
+                }
+            }
+        }
+
+        // Score and sort recipes
+        for ((_, recipeDetails) in allPotentialRecipes) {
+            val score = calculateRecipeScore(recipeDetails, preferences)
+            val recipe = recipeDetails.toRecipe()
+            recommendedRecipes[recipe] = score
+        }
+
+        val sortedRecipes = recommendedRecipes.entries.sortedByDescending { it.value }.map { it.key }
+        return sortedRecipes.take(maxRecommendations) // Limit to maxRecommendations
     }
 
+    private fun calculateRecipeScore(recipeDetails: RecipeDetails, preferences: UserPreferences): Int {
+        var score = 0
+
+        // Increase score if recipe's category is a favorite
+        if (recipeDetails.strCategory in preferences.favoriteCategories) {
+            score += 5
+        }
+
+        // Increase score based on matching ingredients
+        val ingredients = extractIngredients(recipeDetails)
+        val matchingIngredients = ingredients.intersect(preferences.favoriteIngredients.toSet())
+        score += matchingIngredients.size * 2
+
+        return score
+    }
 
     private suspend fun analyzePreferences(favoriteRecipes: List<Recipe>): UserPreferences {
         val categoryCounts = mutableMapOf<String, Int>()
@@ -100,8 +163,6 @@ class RecommendationsViewModel : ViewModel() {
             }
 
             // Fetch recipe details to get ingredients
-            // If ingredients are not available in Recipe, fetch RecipeDetails
-            // Assuming you have a method to fetch RecipeDetails by idMeal
             val recipeDetails = getRecipeDetailsById(recipe.idMeal)
             val ingredients = extractIngredients(recipeDetails)
             for (ingredient in ingredients) {
@@ -141,18 +202,21 @@ class RecommendationsViewModel : ViewModel() {
         return ingredients
     }
 
-    private suspend fun getDefaultRecommendations(): List<Recipe> {
-        // Fetch some default recipes, perhaps the most popular ones
+    private suspend fun getDefaultRecommendations(maxRecommendations: Int = 10): List<Recipe> {
+        // Fetch some default recipes
         val response = recipeApiService.getRecipesByCategory("Seafood") // Example category
         val recipes = mutableListOf<Recipe>()
-        response.meals.let { meals ->
-            meals.forEach { meal ->
-                val recipeDetailResponse = recipeDetailsApiService.getRecipeById(meal.idMeal)
-                val detailedRecipe = recipeDetailResponse?.meals?.firstOrNull()
-                detailedRecipe?.let { recipeDetails ->
-                    val recipe = recipeDetails.toRecipe()
-                    recipes.add(recipe)
-                }
+        val meals = response.meals
+        for (meal in meals) {
+            val recipeDetailResponse = recipeDetailsApiService.getRecipeById(meal.idMeal)
+            val detailedRecipe = recipeDetailResponse?.meals?.firstOrNull()
+            if (detailedRecipe != null) {
+                val recipe = detailedRecipe.toRecipe()
+                recipes.add(recipe)
+                if (recipes.size >= maxRecommendations) break
+            }
+            if (recipes.size >= maxRecommendations) {
+                break
             }
         }
         return recipes
