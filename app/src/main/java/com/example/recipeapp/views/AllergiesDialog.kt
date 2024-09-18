@@ -18,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.recipeapp.data.Ingredient
 import com.example.recipeapp.viewmodels.IngredientsViewModel
 import com.example.recipeapp.viewmodels.ProfileViewModel
@@ -28,7 +29,7 @@ fun AllergiesDialog(
     onDismiss: () -> Unit,
     onSaveAllergies: (allergies: List<String>) -> Unit,
     ingredientsViewModel: IngredientsViewModel,
-    profileViewModel: ProfileViewModel,
+    profileViewModel: ProfileViewModel, //Passing from parent composable so that a single viewmodel can be shared by both of them
     userId: String
 ) {
     // Initialize a remember state to store selected ingredients
@@ -77,7 +78,9 @@ fun AllergiesDialog(
                         value = searchQuery,
                         onValueChange = { searchQuery = it },
                         placeholder = { Text("Search") },
-                        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 8.dp)
                     )
 
                     filteredIngredients = ingredients!!.filter {

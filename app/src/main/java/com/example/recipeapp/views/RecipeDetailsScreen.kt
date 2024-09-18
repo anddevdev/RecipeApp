@@ -16,12 +16,12 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.rememberAsyncImagePainter
 import com.example.recipeapp.data.Note
 import com.example.recipeapp.data.Recipe
 import com.example.recipeapp.data.RecipeDetails
 import com.example.recipeapp.data.UserProfile
-import com.example.recipeapp.repositories.FirestoreRepository
 import com.example.recipeapp.viewmodels.FavoritesViewModel
 import com.example.recipeapp.viewmodels.ProfileViewModel
 import com.example.recipeapp.viewmodels.RecipeDetailViewModel
@@ -31,12 +31,11 @@ import java.util.UUID
 
 @Composable
 fun RecipeDetailScreen(
-    viewModel: RecipeDetailViewModel,
     recipe: Recipe,
-    favoritesViewModel: FavoritesViewModel,
-    profileViewModel: ProfileViewModel,
-    firestoreRepository: FirestoreRepository,
-    navigateToFavoriteRecipes: () -> Unit
+    navigateToFavoriteRecipes: () -> Unit,
+    viewModel: RecipeDetailViewModel = hiltViewModel(),
+    favoritesViewModel: FavoritesViewModel = hiltViewModel(),
+    profileViewModel: ProfileViewModel = hiltViewModel()
 ) {
     var isFavorite by remember { mutableStateOf(false) }
     var loadingProfile by remember { mutableStateOf(true) }
@@ -46,7 +45,7 @@ fun RecipeDetailScreen(
 
     // Observe recipe detail state
     var recipeDetailState by remember {
-        mutableStateOf<RecipeDetailViewModel.RecipeDetailState>(
+        mutableStateOf(
             RecipeDetailViewModel.RecipeDetailState(
                 loading = true
             )
@@ -143,7 +142,7 @@ fun RecipeDetailScreen(
                     if (allergies.isEmpty()) {
                         "You haven't specified any allergies."
                     } else {
-                        val hasAllergies = recipeDetailState?.recipe?.let { recipe ->
+                        val hasAllergies = recipeDetailState.recipe?.let { recipe ->
                             (1..20).any { i ->
                                 val ingredient = recipe.getIngredient(i)
                                 ingredient != null && allergies.contains(ingredient)

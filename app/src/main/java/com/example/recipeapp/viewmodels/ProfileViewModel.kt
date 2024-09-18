@@ -7,9 +7,14 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.recipeapp.data.UserProfile
 import com.example.recipeapp.repositories.FirestoreRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-class ProfileViewModel(private val repository: FirestoreRepository) : ViewModel() {
+@HiltViewModel
+class ProfileViewModel @Inject constructor(
+    private val repository: FirestoreRepository
+) : ViewModel() {
 
     private val _userProfile = MutableLiveData<UserProfile?>()
     val userProfile: LiveData<UserProfile?>
@@ -37,7 +42,7 @@ class ProfileViewModel(private val repository: FirestoreRepository) : ViewModel(
         }
     }
 
-    // ProfileViewModel
+
     fun updateUserName(userId: String, name: String, onSuccess: () -> Unit) {
         viewModelScope.launch {
             try {
@@ -53,9 +58,8 @@ class ProfileViewModel(private val repository: FirestoreRepository) : ViewModel(
         viewModelScope.launch {
             try {
                 repository.addUserAllergies(userId, allergies)
-                // Log success or perform any additional actions
             } catch (e: Exception) {
-                // Log error or handle failure
+                Log.e("ProfileViewModel", "Error updating allergies: ${e.message}")
             }
         }
     }

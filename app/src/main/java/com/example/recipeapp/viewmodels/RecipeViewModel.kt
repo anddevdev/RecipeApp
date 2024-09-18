@@ -7,12 +7,14 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.recipeapp.data.Recipe
 import com.example.recipeapp.api.RecipeApiService
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-
-class RecipeViewModel : ViewModel() {
-
-    private val recipeApiService: RecipeApiService = RecipeApiService.instance
+@HiltViewModel
+class RecipeViewModel @Inject constructor(
+    private val recipeApiService: RecipeApiService
+) : ViewModel() {
 
     private val _recipesState = mutableStateOf(RecipesState())
 

@@ -10,15 +10,18 @@ import com.example.recipeapp.data.RecipeDetails
 import com.example.recipeapp.data.toRecipe
 import com.example.recipeapp.repositories.FirestoreRepository
 import com.google.firebase.auth.FirebaseAuth
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-class RecommendationsViewModel : ViewModel() {
-
-    private val firestoreRepository: FirestoreRepository
-    private val recipeApiService: RecipeApiService = RecipeApiService.instance
-    private val recipeDetailsApiService: RecipeDetailsApiService = RecipeDetailsApiService.instance
+@HiltViewModel
+class RecommendationsViewModel @Inject constructor(
+    private val firestoreRepository: FirestoreRepository,
+    private val recipeApiService: RecipeApiService,
+    private val recipeDetailsApiService: RecipeDetailsApiService
+) : ViewModel() {
 
     private val _recommendedRecipes = MutableStateFlow<List<Recipe>>(emptyList())
     val recommendedRecipes: StateFlow<List<Recipe>> get() = _recommendedRecipes
@@ -33,9 +36,6 @@ class RecommendationsViewModel : ViewModel() {
     private var cachedPreferences: UserPreferences? = null
     private var cachedRecommendations: List<Recipe> = emptyList()
 
-    init {
-        firestoreRepository = FirestoreRepository(recipeDetailsApiService)
-    }
 
     fun fetchRecommendedRecipes() {
         viewModelScope.launch {

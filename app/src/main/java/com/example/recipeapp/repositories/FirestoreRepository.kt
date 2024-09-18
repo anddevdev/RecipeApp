@@ -9,13 +9,13 @@ import com.example.recipeapp.data.UserProfile
 import com.example.recipeapp.data.toRecipe
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
+import jakarta.inject.Inject
 import kotlinx.coroutines.tasks.await
 
-class FirestoreRepository(
-    private val recipeDetailsApiService: RecipeDetailsApiService
+class FirestoreRepository @Inject constructor(
+    private val recipeDetailsApiService: RecipeDetailsApiService,
+    private val firestore: FirebaseFirestore
 ) {
-
-    private val firestore = FirebaseFirestore.getInstance()
 
     // Add favorite recipe for a user
     suspend fun addFavorite(

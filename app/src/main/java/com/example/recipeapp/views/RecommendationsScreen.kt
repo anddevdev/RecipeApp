@@ -12,16 +12,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.rememberAsyncImagePainter
 import com.example.recipeapp.data.Recipe
 import com.example.recipeapp.viewmodels.RecommendationsViewModel
-import androidx.lifecycle.viewmodel.compose.viewModel
 
 @Composable
 fun RecommendationsScreen(
-    onRecipeClick: (Recipe) -> Unit
+    onRecipeClick: (Recipe) -> Unit,
+    viewModel: RecommendationsViewModel = hiltViewModel()
 ) {
-    val viewModel: RecommendationsViewModel = viewModel()
     val recommendedRecipes by viewModel.recommendedRecipes.collectAsState()
     val isLoading by viewModel.loading.collectAsState()
     val showingDefaultRecommendations by viewModel.showingDefaultRecommendations.collectAsState()

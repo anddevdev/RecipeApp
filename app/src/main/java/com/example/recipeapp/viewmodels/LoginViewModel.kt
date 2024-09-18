@@ -4,10 +4,14 @@ import android.util.Log
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import com.google.firebase.auth.FirebaseAuth
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 
-class LoginViewModel : ViewModel() {
+@HiltViewModel
+class LoginViewModel @Inject constructor(
+    private val auth: FirebaseAuth
+) : ViewModel() {
 
-    private val auth = FirebaseAuth.getInstance()
     val isLoggedOut = MutableLiveData<Boolean>()
     val isLoggedInAnonymously = MutableLiveData<Boolean>()
 

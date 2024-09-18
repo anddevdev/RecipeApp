@@ -19,18 +19,18 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.recipeapp.data.UserProfile
-import com.example.recipeapp.repositories.FirestoreRepository
 import com.example.recipeapp.viewmodels.IngredientsViewModel
 import com.example.recipeapp.viewmodels.ProfileViewModel
 
 @Composable
 fun ProfileScreen(
     userId: String,
-    profileViewModel: ProfileViewModel,
-    firestoreRepository: FirestoreRepository,
-    ingredientsViewModel: IngredientsViewModel
+    profileViewModel: ProfileViewModel = hiltViewModel(),
+    ingredientsViewModel: IngredientsViewModel = hiltViewModel()
 ) {
+
     var isLoading by remember { mutableStateOf(true) }
     var userProfile by remember { mutableStateOf<UserProfile?>(null) }
     var showDialog by remember { mutableStateOf(false) }

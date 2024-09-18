@@ -1,6 +1,5 @@
 package com.example.recipeapp.viewmodels
 
-import android.content.ContentValues.TAG
 import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -10,11 +9,15 @@ import com.example.recipeapp.api.RecipeDetailsApiService
 import com.example.recipeapp.data.Note
 import com.example.recipeapp.data.RecipeDetails
 import com.example.recipeapp.repositories.FirestoreRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-class RecipeDetailViewModel(private val firestoreRepository: FirestoreRepository) : ViewModel() {
-
-    private val recipeDetailsApiService: RecipeDetailsApiService = RecipeDetailsApiService.instance
+@HiltViewModel
+class RecipeDetailViewModel @Inject constructor(
+    private val firestoreRepository: FirestoreRepository,
+    private val recipeDetailsApiService: RecipeDetailsApiService
+) : ViewModel() {
 
     private val _recipeDetailState = MutableLiveData<RecipeDetailState>()
     val recipeDetailState: LiveData<RecipeDetailState> = _recipeDetailState
@@ -57,7 +60,7 @@ class RecipeDetailViewModel(private val firestoreRepository: FirestoreRepository
             firestoreRepository.addNote(note, userId)
         } catch (e: Exception) {
             // Handle exception
-            Log.e(TAG, "Error adding note: ${e.message}", e)
+            Log.e("RecipeDetailsViewModel", "Error adding note: ${e.message}", e)
         }
     }
 
@@ -67,7 +70,7 @@ class RecipeDetailViewModel(private val firestoreRepository: FirestoreRepository
             Log.d("NOTEUPDATE", "UPDATEDNOTE: $updatedContent , NOTEID: $noteId , USERID: $userId")
         } catch (e: Exception) {
             // Handle exception
-            Log.e(TAG, "Error updating note: ${e.message}", e)
+            Log.e("RecipeDetailsViewModel", "Error updating note: ${e.message}", e)
         }
     }
 

@@ -13,13 +13,4 @@ interface RecipeDetailsApiService {
     @GET("lookup.php")
     suspend fun getRecipeById(@Query("i") id: String): RecipeDetailsResponse?
 
-    companion object {
-        val instance: RecipeDetailsApiService by lazy {
-            Retrofit.Builder()
-                .baseUrl("https://www.themealdb.com/api/json/v1/1/")
-                .addConverterFactory(GsonConverterFactory.create())
-                .build()
-                .create(RecipeDetailsApiService::class.java)
-        }
-    }
 }
