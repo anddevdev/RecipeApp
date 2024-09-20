@@ -18,7 +18,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.recipeapp.data.Ingredient
 import com.example.recipeapp.viewmodels.IngredientsViewModel
 import com.example.recipeapp.viewmodels.ProfileViewModel
@@ -32,8 +31,8 @@ fun AllergiesDialog(
     profileViewModel: ProfileViewModel, //Passing from parent composable so that a single viewmodel can be shared by both of them
     userId: String
 ) {
-    // Initialize a remember state to store selected ingredients
-    val selectedIngredients by remember { mutableStateOf(selectedAllergies.toMutableSet()) }
+
+    val selectedIngredients = remember { mutableStateListOf<String>().apply { addAll(selectedAllergies) } }
 
     // Observe the ingredients LiveData
     val ingredients by ingredientsViewModel.ingredients.observeAsState()

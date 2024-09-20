@@ -58,6 +58,9 @@ class RecipeDetailViewModel @Inject constructor(
     suspend fun addNote(note: Note, userId: String) {
         try {
             firestoreRepository.addNote(note, userId)
+            val updatedNotes = _existingNotes.value?.toMutableList() ?: mutableListOf()
+            updatedNotes.add(note)
+            _existingNotes.postValue(updatedNotes)
         } catch (e: Exception) {
             // Handle exception
             Log.e("RecipeDetailsViewModel", "Error adding note: ${e.message}", e)
@@ -67,6 +70,12 @@ class RecipeDetailViewModel @Inject constructor(
     suspend fun updateNote(noteId: String, updatedContent: Note, userId: String) {
         try {
             firestoreRepository.updateNote(userId, noteId, updatedContent)
+            val updatedNotes = _existingNotes.value?.toMutableList() ?: mutableListOf()
+            val index = updatedNotes.indexOfFirst { it.noteId == noteId }
+            if (index >= 0) {
+                updatedNotes[index] = updatedContent  // Replace the note with the updated content
+                _existingNotes.postValue(updatedNotes)  // Trigger LiveData update
+            }
             Log.d("NOTEUPDATE", "UPDATEDNOTE: $updatedContent , NOTEID: $noteId , USERID: $userId")
         } catch (e: Exception) {
             // Handle exception
@@ -84,6 +93,9 @@ class RecipeDetailViewModel @Inject constructor(
     // Delete a note by ID
     suspend fun deleteNoteById(noteId: String, userId: String) {
         firestoreRepository.deleteNoteById(noteId, userId)
+        val updatedNotes = _existingNotes.value?.toMutableList() ?: mutableListOf()
+        updatedNotes.removeAll { it.noteId == noteId }
+        _existingNotes.postValue(updatedNotes)
     }
 
     data class RecipeDetailState(

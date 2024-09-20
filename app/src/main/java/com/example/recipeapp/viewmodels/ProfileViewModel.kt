@@ -47,6 +47,8 @@ class ProfileViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 repository.updateUserName(userId, name)
+                val updatedProfile = _userProfile.value?.copy(name = name)
+                _userProfile.value = updatedProfile
                 onSuccess()
             } catch (e: Exception) {
                 Log.e("ProfileViewModel", "Error updating username: ${e.message}")
@@ -58,6 +60,8 @@ class ProfileViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 repository.addUserAllergies(userId, allergies)
+                val updatedProfile = _userProfile.value?.copy(allergies = allergies.toMutableList())
+                _userProfile.value = updatedProfile
             } catch (e: Exception) {
                 Log.e("ProfileViewModel", "Error updating allergies: ${e.message}")
             }
@@ -69,7 +73,9 @@ class ProfileViewModel @Inject constructor(
             try {
                 val userProfile = repository.getUserProfile(userId)
                 if (userProfile == null || userProfile.name.isNullOrEmpty()) {
-                    repository.addProfileData(userId, UserProfile(name = name))
+                    val newProfile = UserProfile(name = name)
+                    repository.addProfileData(userId, newProfile)
+                    _userProfile.value = newProfile
                     onSuccess()
                 }
             } catch (e: Exception) {

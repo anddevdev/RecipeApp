@@ -50,7 +50,6 @@ fun ProfileDialog(
             Button(
                 onClick = {
                     onSaveProfile(nameState)
-                    onDismiss()
                 },
                 enabled = isNameValid // Enable button based on validation result
             ) {
