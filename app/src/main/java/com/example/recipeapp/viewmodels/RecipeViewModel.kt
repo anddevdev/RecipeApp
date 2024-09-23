@@ -7,10 +7,14 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.recipeapp.data.Recipe
 import com.example.recipeapp.api.RecipeApiService
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-
-class RecipeViewModel : ViewModel() {
+@HiltViewModel
+class RecipeViewModel @Inject constructor(
+    private val recipeApiService: RecipeApiService
+) : ViewModel() {
 
     private val _recipesState = mutableStateOf(RecipesState())
 
@@ -22,7 +26,7 @@ fun fetchRecipesByCategory(category: String) {
     viewModelScope.launch {
         try {
             Log.d("RecipeViewModel", "Fetching recipes for category: $category")
-            val response = RecipeApiService.recipeApiService.getRecipesByCategory(category)
+            val response = recipeApiService.getRecipesByCategory(category)
             _recipesState.value = _recipesState.value.copy(
                 list = response.meals ?: emptyList(),
                 loading = false,

@@ -19,23 +19,22 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.recipeapp.data.UserProfile
-import com.example.recipeapp.repositories.FirestoreRepository
 import com.example.recipeapp.viewmodels.IngredientsViewModel
 import com.example.recipeapp.viewmodels.ProfileViewModel
 
 @Composable
 fun ProfileScreen(
     userId: String,
-    profileViewModel: ProfileViewModel,
-    firestoreRepository: FirestoreRepository,
-    ingredientsViewModel: IngredientsViewModel
+    profileViewModel: ProfileViewModel = hiltViewModel(),
+    ingredientsViewModel: IngredientsViewModel = hiltViewModel()
 ) {
+
+    val userProfile by profileViewModel.userProfile.observeAsState()
     var isLoading by remember { mutableStateOf(true) }
-    var userProfile by remember { mutableStateOf<UserProfile?>(null) }
     var showDialog by remember { mutableStateOf(false) }
     var showDialogEditAllergies by remember { mutableStateOf(false) } // State for showing the edit allergies dialog
-    var userName by remember { mutableStateOf("") }
     var isSavingProfile by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
@@ -48,11 +47,6 @@ fun ProfileScreen(
         }
     }
 
-    LaunchedEffect(profileViewModel.userProfile) {
-        profileViewModel.userProfile.observeForever {
-            userProfile = it
-        }
-    }
 
     Box(
         modifier = Modifier.fillMaxSize(),
@@ -62,7 +56,7 @@ fun ProfileScreen(
             // Display loading indicator if data is still loading
             CircularProgressIndicator()
         } else {
-            if (userProfile == null) {
+            if (userProfile == null || userProfile?.name.isNullOrEmpty()) {
                 // If userProfile is null, display the dialog to enter the name
                 showDialog = true
             } else {
@@ -72,8 +66,6 @@ fun ProfileScreen(
                     onProfileSaved = {
                         isSavingProfile = true
                         profileViewModel.updateUserAllergies(userId, userProfile!!.allergies)
-                        // Update userProfile directly
-                        userProfile!!.name = userName
                     },
                     onEditNameClicked = { showDialog = true },
                     // Show the edit allergies dialog when clicked
@@ -86,21 +78,18 @@ fun ProfileScreen(
     // ProfileScreen
     if (showDialog) {
         ProfileDialog(
-            currentName = userProfile?.name ?: "", // Pass the current name
+            currentName = userProfile?.name ?: "",  // Pass the current name
             onDismiss = { showDialog = false },
             onSaveProfile = { name ->
-                userName = name
-                if (userProfile?.name.isNullOrEmpty()) {
-                    // If the user doesn't have a name yet, add profile data
+                if (userProfile == null || userProfile?.name.isNullOrEmpty()) {
+                    // New user: Add profile data
                     profileViewModel.addProfileData(userId, name) {
                         showDialog = false
-                        userProfile = UserProfile(name = name) // Update userProfile directly
                     }
                 } else {
-                    // If the user already has a name, update only the name
+                    // Existing user: Update the name
                     profileViewModel.updateUserName(userId, name) {
                         showDialog = false
-                        userProfile = userProfile?.copy(name = name) // Update userProfile directly
                     }
                 }
             }
@@ -122,7 +111,7 @@ fun ProfileScreen(
                 selectedAllergies = userProfile?.allergies ?: emptyList(),
                 onDismiss = { showDialogEditAllergies = false },
                 onSaveAllergies = { allergies ->
-                    userProfile?.allergies = allergies.toMutableList() // Update the user's allergies
+                    profileViewModel.updateUserAllergies(userId, allergies)
                     showDialogEditAllergies = false
                 },
                 ingredientsViewModel = ingredientsViewModel,

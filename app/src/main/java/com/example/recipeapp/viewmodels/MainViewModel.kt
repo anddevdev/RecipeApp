@@ -5,11 +5,15 @@ import androidx.compose.runtime.State
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.recipeapp.data.Category
-import com.example.recipeapp.api.recipeService
+import com.example.recipeapp.api.ApiService
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-class MainViewModel : ViewModel() {
-
+@HiltViewModel
+class MainViewModel @Inject constructor(
+    private val apiService: ApiService
+) : ViewModel() {
 
     private val _categoriesState = mutableStateOf(RecipeState())
 
@@ -23,7 +27,7 @@ class MainViewModel : ViewModel() {
 
         viewModelScope.launch {
             try {
-                val response = recipeService.getCategories()
+                val response = apiService.getCategories()
                 _categoriesState.value = _categoriesState.value.copy(
                     list = response.categories,
                     loading = false,

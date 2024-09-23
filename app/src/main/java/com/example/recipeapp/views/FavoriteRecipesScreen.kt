@@ -19,12 +19,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.rememberAsyncImagePainter
 import com.example.recipeapp.viewmodels.FavoritesViewModel
 import com.google.firebase.auth.FirebaseAuth
 
 @Composable
-fun FavoriteRecipesScreen(favoritesViewModel: FavoritesViewModel) {
+fun FavoriteRecipesScreen(favoritesViewModel: FavoritesViewModel = hiltViewModel()) {
+
     val userId = FirebaseAuth.getInstance().currentUser?.uid
 
     var favoriteRecipes by remember { mutableStateOf<List<Triple<String, String, String>>?>(null) }

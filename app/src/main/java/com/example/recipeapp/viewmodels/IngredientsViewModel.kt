@@ -6,9 +6,14 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.recipeapp.api.IngredientsApiService
 import com.example.recipeapp.data.Ingredient
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-class IngredientsViewModel(private val apiService: IngredientsApiService) : ViewModel() {
+@HiltViewModel
+class IngredientsViewModel @Inject constructor(
+    private val apiService: IngredientsApiService
+) : ViewModel() {
 
     private val _ingredients = MutableLiveData<List<Ingredient>?>()
     val ingredients: MutableLiveData<List<Ingredient>?> = _ingredients

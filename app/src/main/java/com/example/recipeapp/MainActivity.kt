@@ -6,34 +6,24 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.rememberNavController
-import com.example.recipeapp.repositories.FirestoreRepository
 import com.example.recipeapp.viewmodels.LoginViewModel
 import com.example.recipeapp.viewmodels.RegistrationViewModel
-import com.google.firebase.auth.FirebaseAuth
+import dagger.hilt.android.AndroidEntryPoint
 
+
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
             val navController = rememberNavController()
-            val loginViewModel: LoginViewModel = viewModel()
-            val registrationViewModel: RegistrationViewModel = viewModel()
-            val currentUser = FirebaseAuth.getInstance().currentUser
 
-
-
-            RecipeApp(
-                navController = navController,
-                loginViewModel = loginViewModel,
-                registrationViewModel = registrationViewModel,
-                firestoreRepository = FirestoreRepository(),
-
-            )
-
+            RecipeApp(navController = navController)
 
             // Observe changes in login status to display Toast messages
+            val loginViewModel: LoginViewModel = hiltViewModel()
             val isLoggedOut by loginViewModel.isLoggedOut.observeAsState(initial = true)
 
             LaunchedEffect(isLoggedOut) {
@@ -56,6 +46,7 @@ class MainActivity : ComponentActivity() {
                 }
             }
 
+            val registrationViewModel: RegistrationViewModel = hiltViewModel()
             val isRegistered by registrationViewModel.isRegistered.observeAsState(initial = false)
 
             LaunchedEffect(isRegistered) {

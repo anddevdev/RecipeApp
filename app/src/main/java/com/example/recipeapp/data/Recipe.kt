@@ -8,7 +8,8 @@ data class Recipe(
     val idMeal: String,
     val strMeal: String,
     val strMealThumb: String,
-    val strInstructions: String
+    val strInstructions: String,
+    val strCategory: String?
 ) : Parcelable
 
 data class RecipesResponse(val meals: List<Recipe>)

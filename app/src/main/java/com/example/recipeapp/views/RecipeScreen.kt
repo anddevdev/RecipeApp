@@ -13,13 +13,14 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.rememberAsyncImagePainter
 import com.example.recipeapp.data.Category
 
@@ -29,8 +30,11 @@ import com.example.recipeapp.viewmodels.MainViewModel
 
 @Composable
 fun RecipeScreen(modifier: Modifier = Modifier,
-                 viewstate : MainViewModel.RecipeState,
+                 viewModel: MainViewModel = hiltViewModel(),
                  navigateToDetail:(Category) -> Unit){
+
+    val viewstate by viewModel.categoriesState
+
     Box(modifier = Modifier.fillMaxSize()){
         when{
             viewstate.loading -> {

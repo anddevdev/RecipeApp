@@ -8,8 +8,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -17,49 +22,28 @@ import androidx.navigation.compose.rememberNavController
 import com.example.recipeapp.data.Category
 import com.example.recipeapp.data.Recipe
 import com.example.recipeapp.data.Screen
-import com.example.recipeapp.repositories.FirestoreRepository
 import com.example.recipeapp.viewmodels.FavoritesViewModel
+import com.example.recipeapp.viewmodels.IngredientsViewModel
 import com.example.recipeapp.viewmodels.LoginViewModel
-import com.example.recipeapp.viewmodels.MainViewModel
+import com.example.recipeapp.viewmodels.ProfileViewModel
 import com.example.recipeapp.viewmodels.RecipeDetailViewModel
 import com.example.recipeapp.viewmodels.RecipeViewModel
 import com.example.recipeapp.viewmodels.RegistrationViewModel
-import com.example.recipeapp.views.BottomNavigationBar
-import com.example.recipeapp.views.CategoryDetailScreen
-import com.example.recipeapp.views.FavoriteRecipesScreen
-import com.example.recipeapp.views.LoginScreen
-import com.example.recipeapp.views.RecipeDetailScreen
-import com.example.recipeapp.views.RecipeScreen
-import com.example.recipeapp.views.RecipesScreen
-import com.example.recipeapp.views.RegisterScreen
-import androidx.compose.runtime.livedata.observeAsState
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
-import com.example.recipeapp.api.IngredientsApiService
-import com.example.recipeapp.viewmodels.IngredientsViewModel
-import com.example.recipeapp.viewmodels.ProfileViewModel
-import com.example.recipeapp.views.LogoutDialog
-import com.example.recipeapp.views.ProfileScreen
+import com.example.recipeapp.views.*
 import com.google.firebase.auth.FirebaseAuth
 
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @Composable
 fun RecipeApp(
     navController: NavHostController = rememberNavController(),
-    loginViewModel: LoginViewModel,
-    registrationViewModel: RegistrationViewModel,
-    firestoreRepository: FirestoreRepository
 ) {
-
+    val loginViewModel: LoginViewModel = hiltViewModel()
+    val registrationViewModel: RegistrationViewModel = hiltViewModel()
     val isLoggedOut by loginViewModel.isLoggedOut.observeAsState(initial = true)
     val isRegistered by registrationViewModel.isRegistered.observeAsState(initial = false)
     val isLoggedInAnonymously by loginViewModel.isLoggedInAnonymously.observeAsState(initial = false)
 
-    val mainViewModel: MainViewModel = viewModel()
-    val viewstate by mainViewModel.categoriesState
-    val favoritesViewModel = remember { FavoritesViewModel(firestoreRepository) }
+
     var showLogoutDialog by remember { mutableStateOf(false) }
 
     Log.d("RecipeApp", "isLoggedOut: $isLoggedOut, isLoggedInAnonymously: $isLoggedInAnonymously, isRegistered: $isRegistered")
@@ -80,7 +64,6 @@ fun RecipeApp(
                 composable(route = Screen.RecipeScreen.route) {
                     Log.d("RecipeApp", "Showing RecipeScreen")
                     RecipeScreen(
-                        viewstate = viewstate,
                         navigateToDetail = { category ->
                             navController.currentBackStackEntry?.savedStateHandle?.set(
                                 "cat",
@@ -103,7 +86,7 @@ fun RecipeApp(
 
                 composable(route = Screen.RecipesScreen.route) {
                     Log.d("RecipeApp", "Showing RecipesScreen")
-                    val recipesViewModel: RecipeViewModel = viewModel()
+                    val recipesViewModel: RecipeViewModel = hiltViewModel()
                     val recipesState by recipesViewModel.recipesState
                     val category =
                         navController.previousBackStackEntry?.savedStateHandle?.get<Category>("cat")
@@ -116,23 +99,27 @@ fun RecipeApp(
 
                 composable(route = Screen.RecipeDetailsScreen.route) {
                     Log.d("RecipeApp", "Showing RecipeDetailsScreen")
-                    val recipeDetailsViewModel = RecipeDetailViewModel(firestoreRepository)
-                    val profileViewModel =
-                        ProfileViewModel(firestoreRepository)
-                    val recipe =
-                        navController.previousBackStackEntry?.savedStateHandle?.get<Recipe>("recipe")
-                            ?: Recipe("", "", "", "")
+
+                    val recipeDetailsViewModel: RecipeDetailViewModel = hiltViewModel()
+                    val profileViewModel: ProfileViewModel = hiltViewModel()
+                    val favoritesViewModel: FavoritesViewModel = hiltViewModel()
+
+                    // Retrieve the recipe from the previous back stack entry
+                    val recipe = navController.previousBackStackEntry?.savedStateHandle?.get<Recipe>("recipe")
+                        ?: Recipe("", "", "", "", "")
+
+                    // Match the signature of the RecipeDetailScreen function
                     RecipeDetailScreen(
-                        profileViewModel = profileViewModel,
                         recipe = recipe,
                         viewModel = recipeDetailsViewModel,
                         favoritesViewModel = favoritesViewModel,
-                        firestoreRepository = firestoreRepository
-                    ) {
-                        navController.navigate(Screen.FavoriteRecipesScreen.route) {
-                            popUpTo(Screen.RecipeScreen.route) { inclusive = false }
+                        profileViewModel = profileViewModel,
+                        navigateToFavoriteRecipes = {
+                            navController.navigate(Screen.FavoriteRecipesScreen.route) {
+                                popUpTo(Screen.RecipeScreen.route) { inclusive = false }
+                            }
                         }
-                    }
+                    )
                 }
 
 
@@ -163,19 +150,27 @@ fun RecipeApp(
 
                 composable(Screen.FavoriteRecipesScreen.route) {
                     Log.d("RecipeApp", "Showing FavoriteRecipesScreen")
-                    FavoriteRecipesScreen(favoritesViewModel)
+                    FavoriteRecipesScreen()
                 }
 
                 composable(route = Screen.ProfileScreen.route) {
                     val userId = FirebaseAuth.getInstance().currentUser?.uid
                     if (userId != null) {
-                        val profileViewModel =
-                            ProfileViewModel(firestoreRepository)
-                        val ingredientsViewModel = IngredientsViewModel(IngredientsApiService.ingredientsApiService)
-                        ProfileScreen(userId, profileViewModel, firestoreRepository, ingredientsViewModel)
+                        val profileViewModel: ProfileViewModel = hiltViewModel()
+                        val ingredientsViewModel: IngredientsViewModel = hiltViewModel()
+                        ProfileScreen(userId, profileViewModel, ingredientsViewModel)
                     } else {
                         Log.e("RecipeApp", "User ID is null")
                     }
+                }
+
+                composable(route = Screen.RecommendationsScreen.route) {
+                    RecommendationsScreen(
+                        onRecipeClick = { recipe ->
+                            navController.currentBackStackEntry?.savedStateHandle?.set("recipe", recipe)
+                            navController.navigate(Screen.RecipeDetailsScreen.route)
+                        }
+                    )
                 }
             }
 

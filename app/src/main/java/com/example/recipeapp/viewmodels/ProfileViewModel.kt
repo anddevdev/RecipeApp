@@ -7,9 +7,14 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.recipeapp.data.UserProfile
 import com.example.recipeapp.repositories.FirestoreRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-class ProfileViewModel(private val repository: FirestoreRepository) : ViewModel() {
+@HiltViewModel
+class ProfileViewModel @Inject constructor(
+    private val repository: FirestoreRepository
+) : ViewModel() {
 
     private val _userProfile = MutableLiveData<UserProfile?>()
     val userProfile: LiveData<UserProfile?>
@@ -37,11 +42,13 @@ class ProfileViewModel(private val repository: FirestoreRepository) : ViewModel(
         }
     }
 
-    // ProfileViewModel
+
     fun updateUserName(userId: String, name: String, onSuccess: () -> Unit) {
         viewModelScope.launch {
             try {
                 repository.updateUserName(userId, name)
+                val updatedProfile = _userProfile.value?.copy(name = name)
+                _userProfile.value = updatedProfile
                 onSuccess()
             } catch (e: Exception) {
                 Log.e("ProfileViewModel", "Error updating username: ${e.message}")
@@ -53,9 +60,10 @@ class ProfileViewModel(private val repository: FirestoreRepository) : ViewModel(
         viewModelScope.launch {
             try {
                 repository.addUserAllergies(userId, allergies)
-                // Log success or perform any additional actions
+                val updatedProfile = _userProfile.value?.copy(allergies = allergies.toMutableList())
+                _userProfile.value = updatedProfile
             } catch (e: Exception) {
-                // Log error or handle failure
+                Log.e("ProfileViewModel", "Error updating allergies: ${e.message}")
             }
         }
     }
@@ -65,7 +73,9 @@ class ProfileViewModel(private val repository: FirestoreRepository) : ViewModel(
             try {
                 val userProfile = repository.getUserProfile(userId)
                 if (userProfile == null || userProfile.name.isNullOrEmpty()) {
-                    repository.addProfileData(userId, UserProfile(name = name))
+                    val newProfile = UserProfile(name = name)
+                    repository.addProfileData(userId, newProfile)
+                    _userProfile.value = newProfile
                     onSuccess()
                 }
             } catch (e: Exception) {

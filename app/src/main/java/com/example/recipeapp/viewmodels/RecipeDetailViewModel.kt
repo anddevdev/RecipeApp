@@ -1,6 +1,5 @@
 package com.example.recipeapp.viewmodels
 
-import android.content.ContentValues.TAG
 import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -10,9 +9,15 @@ import com.example.recipeapp.api.RecipeDetailsApiService
 import com.example.recipeapp.data.Note
 import com.example.recipeapp.data.RecipeDetails
 import com.example.recipeapp.repositories.FirestoreRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-class RecipeDetailViewModel(private val firestoreRepository: FirestoreRepository) : ViewModel() {
+@HiltViewModel
+class RecipeDetailViewModel @Inject constructor(
+    private val firestoreRepository: FirestoreRepository,
+    private val recipeDetailsApiService: RecipeDetailsApiService
+) : ViewModel() {
 
     private val _recipeDetailState = MutableLiveData<RecipeDetailState>()
     val recipeDetailState: LiveData<RecipeDetailState> = _recipeDetailState
@@ -34,7 +39,7 @@ class RecipeDetailViewModel(private val firestoreRepository: FirestoreRepository
         viewModelScope.launch {
             try {
                 Log.d("RecipeDetailsViewModel", "Fetching details for recipe: $recipeName")
-                val response = RecipeDetailsApiService.recipeDetailApiService.getRecipeByName(recipeName)
+                val response = recipeDetailsApiService.getRecipeByName(recipeName)
                 Log.d("RecipeDetailsViewModel", "Response: $response")
                 val recipe = response.meals.firstOrNull()
                 if (recipe != null) {
@@ -53,19 +58,28 @@ class RecipeDetailViewModel(private val firestoreRepository: FirestoreRepository
     suspend fun addNote(note: Note, userId: String) {
         try {
             firestoreRepository.addNote(note, userId)
+            val updatedNotes = _existingNotes.value?.toMutableList() ?: mutableListOf()
+            updatedNotes.add(note)
+            _existingNotes.postValue(updatedNotes)
         } catch (e: Exception) {
             // Handle exception
-            Log.e(TAG, "Error adding note: ${e.message}", e)
+            Log.e("RecipeDetailsViewModel", "Error adding note: ${e.message}", e)
         }
     }
 
     suspend fun updateNote(noteId: String, updatedContent: Note, userId: String) {
         try {
             firestoreRepository.updateNote(userId, noteId, updatedContent)
+            val updatedNotes = _existingNotes.value?.toMutableList() ?: mutableListOf()
+            val index = updatedNotes.indexOfFirst { it.noteId == noteId }
+            if (index >= 0) {
+                updatedNotes[index] = updatedContent  // Replace the note with the updated content
+                _existingNotes.postValue(updatedNotes)  // Trigger LiveData update
+            }
             Log.d("NOTEUPDATE", "UPDATEDNOTE: $updatedContent , NOTEID: $noteId , USERID: $userId")
         } catch (e: Exception) {
             // Handle exception
-            Log.e(TAG, "Error updating note: ${e.message}", e)
+            Log.e("RecipeDetailsViewModel", "Error updating note: ${e.message}", e)
         }
     }
 
@@ -79,6 +93,9 @@ class RecipeDetailViewModel(private val firestoreRepository: FirestoreRepository
     // Delete a note by ID
     suspend fun deleteNoteById(noteId: String, userId: String) {
         firestoreRepository.deleteNoteById(noteId, userId)
+        val updatedNotes = _existingNotes.value?.toMutableList() ?: mutableListOf()
+        updatedNotes.removeAll { it.noteId == noteId }
+        _existingNotes.postValue(updatedNotes)
     }
 
     data class RecipeDetailState(

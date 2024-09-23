@@ -15,13 +15,17 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.rememberAsyncImagePainter
 import com.example.recipeapp.data.Category
 import com.example.recipeapp.data.Recipe
 import com.example.recipeapp.viewmodels.RecipeViewModel
 
 @Composable
-fun RecipesScreen(viewModel: RecipeViewModel, category: Category, onRecipeClick: (Recipe) -> Unit) {
+fun RecipesScreen(viewModel: RecipeViewModel = hiltViewModel(),
+                  category: Category,
+                  onRecipeClick: (Recipe) -> Unit) {
+
     val recipesState by viewModel.recipesState
     var searchQuery by remember { mutableStateOf("") }
 
