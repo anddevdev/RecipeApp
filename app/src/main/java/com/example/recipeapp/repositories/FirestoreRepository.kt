@@ -180,6 +180,66 @@ class FirestoreRepository @Inject constructor(
         }
         return recipes
     }
+
+    suspend fun addRecipeRating(recipeId: String, userId: String, rating: Int) {
+        val recipeRef = firestore.collection("recipes").document(recipeId)
+        val ratingRef = recipeRef.collection("ratings").document(userId)
+
+        // Add or update the rating for the user
+        ratingRef.set(mapOf("rating" to rating))
+            .addOnSuccessListener {
+                Log.d("FirestoreRepository", "Rating added/updated successfully")
+            }
+            .addOnFailureListener { e ->
+                Log.e("FirestoreRepository", "Error adding/updating rating: ${e.message}")
+            }
+
+        // Check if the recipe document exists before updating it
+        val recipeSnapshot = recipeRef.get().await()
+
+        if (!recipeSnapshot.exists()) {
+            // Create the document if it doesn't exist and initialize averageRating and ratingCount
+            recipeRef.set(mapOf(
+                "averageRating" to rating.toDouble(),  // Initial rating is the user's rating
+                "ratingCount" to 1                     // First rating added
+            ))
+        } else {
+            // Recalculate average rating after a new rating is added
+            val ratingsSnapshot = recipeRef.collection("ratings").get().await()
+            val totalRatings = ratingsSnapshot.documents.size
+            val totalRatingValue = ratingsSnapshot.documents.sumOf { it.getLong("rating") ?: 0L }
+
+            val newAverageRating = if (totalRatings > 0) {
+                totalRatingValue.toDouble() / totalRatings
+            } else {
+                0.0
+            }
+
+            // Update average rating and rating count in the recipe document
+            recipeRef.update(
+                mapOf(
+                    "averageRating" to newAverageRating,
+                    "ratingCount" to totalRatings
+                )
+            ).addOnFailureListener { e ->
+                Log.e("FirestoreRepository", "Error updating average rating: ${e.message}")
+            }
+        }
+    }
+
+    suspend fun getRecipeRating(recipeId: String?): Pair<Double, Int> {
+        if (recipeId.isNullOrBlank()) {
+            Log.e("FirestoreRepository", "Invalid recipeId: $recipeId")
+            return Pair(0.0, 0)
+        }
+
+        val recipeRef = firestore.collection("recipes").document(recipeId)
+        val recipeSnapshot = recipeRef.get().await()
+
+        val averageRating = recipeSnapshot.getDouble("averageRating") ?: 0.0
+        val ratingCount = recipeSnapshot.getLong("ratingCount")?.toInt() ?: 0
+        return Pair(averageRating, ratingCount)
+    }
 }
 
 
