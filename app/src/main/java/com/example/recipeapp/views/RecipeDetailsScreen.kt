@@ -9,8 +9,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -25,9 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.rememberAsyncImagePainter
 import com.example.recipeapp.data.Note
-import com.example.recipeapp.data.Recipe
 import com.example.recipeapp.data.RecipeDetails
-import com.example.recipeapp.data.UserProfile
 import com.example.recipeapp.viewmodels.FavoritesViewModel
 import com.example.recipeapp.viewmodels.ProfileViewModel
 import com.example.recipeapp.viewmodels.RecipeDetailViewModel
@@ -37,12 +38,17 @@ import java.util.UUID
 
 @Composable
 fun RecipeDetailScreen(
-    recipe: Recipe,
+    recipeId: String,
     navigateToFavoriteRecipes: () -> Unit,
     viewModel: RecipeDetailViewModel = hiltViewModel(),
     favoritesViewModel: FavoritesViewModel = hiltViewModel(),
     profileViewModel: ProfileViewModel = hiltViewModel()
 ) {
+    val recipeDetailState by viewModel.recipeDetailState.observeAsState(
+        initial = RecipeDetailViewModel.RecipeDetailState(loading = true)
+    )
+    val recipe = recipeDetailState.recipe
+
     var isFavorite by remember { mutableStateOf(false) }
     var loadingProfile by remember { mutableStateOf(true) }
     var notes by remember { mutableStateOf("") }
@@ -52,54 +58,29 @@ fun RecipeDetailScreen(
 
     val coroutineScope = rememberCoroutineScope()
 
-    // Observe recipe detail state
-    var recipeDetailState by remember {
-        mutableStateOf(
-            RecipeDetailViewModel.RecipeDetailState(
-                loading = true
-            )
-        )
-    }
+    val recipeRating by viewModel.recipeRating.observeAsState()
+    var userRating by remember { mutableStateOf(0) }
 
-    // State for existing notes
-    var existingNotes by remember { mutableStateOf<List<Note>>(emptyList()) }
+    // Fetch data when recipeId changes
+    LaunchedEffect(recipeId) {
+        if (recipeId.isNotBlank()) {
+            viewModel.getRecipeDetails(recipeId)
+            FirebaseAuth.getInstance().currentUser?.uid?.let { userId ->
+                viewModel.updateRecipeRating(recipeId)
+                viewModel.getNotesForRecipeAndUser(recipeId, userId)
+            }
+        } else {
+            Log.e("RecipeDetailScreen", "Invalid recipeId: $recipeId")
+        }
+    }
 
     // Observe existing notes
-    LaunchedEffect(viewModel.existingNotes) {
-        viewModel.existingNotes.observeForever { notes ->
-            existingNotes = notes
-            Log.d("RecipeDetailScreen", "Existing notes observed: $notes")
-        }
-    }
+    val existingNotes by viewModel.existingNotes.observeAsState(emptyList())
 
-    // Fetch existing notes for the recipe
-    LaunchedEffect(recipe) {
-        val recipeId = recipe.idMeal
-        Log.d("RecipeDetailScreen", "Fetching existing notes for recipe with ID: $recipeId")
-        FirebaseAuth.getInstance().currentUser?.uid?.let {
-            viewModel.getNotesForRecipeAndUser(
-                recipe.idMeal,
-                userId = it
-            )
-        }
-        Log.d("RecipeDetailScreen", "Existing notes fetched: $existingNotes")
-    }
-
-    LaunchedEffect(recipe) {
-        viewModel.recipeDetailState.observeForever { newRecipeDetailState ->
-            recipeDetailState = newRecipeDetailState
-        }
-        FirebaseAuth.getInstance().currentUser?.uid?.let {
-            viewModel.fetchRecipeDetailsIfNeeded(
-                recipe.strMeal,
-                userId = it
-            )
-        }
-    }
-
-    LaunchedEffect(Unit) {
+    // Check if recipe is favorite
+    LaunchedEffect(recipeId, recipe) {
         val userId = FirebaseAuth.getInstance().currentUser?.uid
-        if (userId != null) {
+        if (userId != null && recipe != null) {
             val favorites = favoritesViewModel.getFavorites(userId)
             isFavorite = favorites.any { it.first == recipe.strMeal }
         }
@@ -114,11 +95,10 @@ fun RecipeDetailScreen(
     }
 
     // Observe changes in user profile (including allergies)
-    var userProfile by remember { mutableStateOf<UserProfile?>(null) }
-    profileViewModel.userProfile.observeForever {
-        userProfile = it
-        loadingProfile = false
-    }
+    val userProfile by profileViewModel.userProfile.observeAsState()
+
+    // Observe loading state for profile
+    loadingProfile = userProfile == null
 
     // Dialog state for editing notes
     var editingNote by remember { mutableStateOf<Note?>(null) }
@@ -126,7 +106,6 @@ fun RecipeDetailScreen(
     LaunchedEffect(editingNote) {
         Log.d("RecipeDetailScreen", "Editing note: $editingNote")
     }
-
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -139,25 +118,24 @@ fun RecipeDetailScreen(
             } else if (userProfile == null) {
                 "Your profile is empty."
             } else {
-                userProfile?.let { profile ->
-                    val allergies = profile.allergies
-                    if (allergies.isEmpty()) {
-                        "You haven't specified any allergies."
-                    } else {
-                        val hasAllergies = recipeDetailState.recipe?.let { recipe ->
-                            (1..20).any { i ->
-                                val ingredient = recipe.getIngredient(i)
-                                ingredient != null && allergies.contains(ingredient)
-                            }
-                        } ?: false
-
-                        if (hasAllergies) {
-                            "You have allergies to some ingredients in this recipe."
-                        } else {
-                            "You don't have any allergies to ingredients in this recipe."
+                val profile = userProfile
+                val allergies = profile?.allergies
+                if (allergies?.isEmpty()!!) {
+                    "You haven't specified any allergies."
+                } else {
+                    val hasAllergies = recipe?.let { recipeDetails ->
+                        (1..20).any { i ->
+                            val ingredient = recipeDetails.getIngredient(i)
+                            ingredient != null && allergies.contains(ingredient)
                         }
+                    } ?: false
+
+                    if (hasAllergies) {
+                        "You have allergies to some ingredients in this recipe."
+                    } else {
+                        "You don't have any allergies to ingredients in this recipe."
                     }
-                } ?: ""
+                }
             }
 
             val textColor = when {
@@ -252,13 +230,13 @@ fun RecipeDetailScreen(
                                         val note = userId?.let {
                                             Note(
                                                 noteId = noteId,
-                                                recipeId = recipeDetailState.recipe?.idMeal ?: "",
+                                                recipeId = recipeId,
                                                 userId = it,
                                                 content = notes
                                             )
                                         }
                                         if (note != null && notes.isNotBlank()) {
-                                            viewModel.addNote(note, userId )
+                                            viewModel.addNote(note, userId)
                                             notes = ""
                                             focusManager.clearFocus()
                                         }
@@ -273,8 +251,7 @@ fun RecipeDetailScreen(
                             Button(
                                 onClick = {
                                     coroutineScope.launch {
-                                        val userId =
-                                            FirebaseAuth.getInstance().currentUser?.uid
+                                        val userId = FirebaseAuth.getInstance().currentUser?.uid
                                         if (userId != null) {
                                             if (isFavorite) {
                                                 favoritesViewModel.removeFavorite(
@@ -300,6 +277,21 @@ fun RecipeDetailScreen(
                                     else "Add to Favorites",
                                 )
                             }
+                            // Ratings UI
+                            Spacer(modifier = Modifier.height(16.dp))
+                            RatingsSection(
+                                userRating = userRating,
+                                averageRating = recipeRating?.first ?: 0.0,
+                                ratingCount = recipeRating?.second ?: 0,
+                                onRatingSelected = { rating ->
+                                    userRating = rating
+                                    FirebaseAuth.getInstance().currentUser?.uid?.let { userId ->
+                                        if (recipe != null) {
+                                            viewModel.addRating(recipe.idMeal, userId, rating)
+                                        }
+                                    }
+                                }
+                            )
                         }
                     } else {
                         // Show recipe not found message
@@ -311,6 +303,7 @@ fun RecipeDetailScreen(
                 }
             }
         }
+
         item {
             // Display existing notes or message if there are no notes
             Box(
@@ -403,8 +396,7 @@ fun RecipeDetailScreen(
                                                     )
                                                 }
                                             }
-                                        )
-                                        {
+                                        ) {
                                             Icon(
                                                 imageVector = Icons.Default.Delete,
                                                 contentDescription = "Delete Note",
@@ -428,8 +420,8 @@ fun RecipeDetailScreen(
             ) {
                 Text(
                     text = "Go to Favorite Recipes",
-                    style = TextStyle(fontWeight = FontWeight.Bold), // Set text style here
-                    color = Color.White // Set text color here
+                    style = TextStyle(fontWeight = FontWeight.Bold),
+                    color = Color.White
                 )
             }
         }
@@ -488,3 +480,35 @@ fun RecipeDetails.getMeasure(index: Int): String? {
         else -> null
     }
 }
+
+// Rating Section UI
+@Composable
+fun RatingsSection(
+    userRating: Int,
+    averageRating: Double,
+    ratingCount: Int,
+    onRatingSelected: (Int) -> Unit
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = "Average Rating: ${"%.1f".format(averageRating)} ($ratingCount ratings)",
+            style = TextStyle(fontWeight = FontWeight.Bold)
+        )
+
+        // Rating stars for user input
+        Row(modifier = Modifier.padding(vertical = 8.dp)) {
+            for (i in 1..5) {
+                IconButton(onClick = { onRatingSelected(i) }) {
+                    Icon(
+                        imageVector = if (i <= userRating) Icons.Default.Star else Icons.Outlined.Star,
+                        contentDescription = "Rating Star",
+                        tint = Color.Yellow
+                    )
+                }
+            }
+        }
+    }
+}//make stars and stuff prettier?

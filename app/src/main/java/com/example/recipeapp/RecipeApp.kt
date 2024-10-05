@@ -79,38 +79,44 @@ fun RecipeApp(
                         navController.previousBackStackEntry?.savedStateHandle?.get<Category>("cat")
                             ?: Category("", "", "", "")
                     CategoryDetailScreen(category = category) {
-                        navController.currentBackStackEntry?.savedStateHandle?.set("cat", category)
-                        navController.navigate(Screen.RecipesScreen.route)
+                        navController.navigate(Screen.RecipesScreen.createRoute(category.strCategory))
                     }
                 }
 
-                composable(route = Screen.RecipesScreen.route) {
-                    Log.d("RecipeApp", "Showing RecipesScreen")
+                composable(
+                    route = Screen.RecipesScreen.route,
+                    arguments = Screen.RecipesScreen.arguments
+                ) { backStackEntry ->
+                    val categoryName = backStackEntry.arguments?.getString("categoryName")
+                    if (categoryName == null) {
+                        Log.e("RecipeApp", "RecipesScreen: categoryName is null")
+                        navController.popBackStack()
+                        return@composable
+                    }
+                    Log.d("RecipeApp", "Showing RecipesScreen with category: $categoryName")
                     val recipesViewModel: RecipeViewModel = hiltViewModel()
-                    val recipesState by recipesViewModel.recipesState
-                    val category =
-                        navController.previousBackStackEntry?.savedStateHandle?.get<Category>("cat")
-                            ?: Category("", "", "", "")
-                    RecipesScreen(recipesViewModel, category = category) { recipe ->
-                        navController.currentBackStackEntry?.savedStateHandle?.set("recipe", recipe)
-                        navController.navigate(Screen.RecipeDetailsScreen.route)
+                    RecipesScreen(recipesViewModel, categoryName) { recipe ->
+                        navController.navigate(Screen.RecipeDetailsScreen.createRoute(recipe.idMeal))
                     }
                 }
 
-                composable(route = Screen.RecipeDetailsScreen.route) {
-                    Log.d("RecipeApp", "Showing RecipeDetailsScreen")
+                composable(
+                    route = Screen.RecipeDetailsScreen.route,
+                    arguments = Screen.RecipeDetailsScreen.arguments
+                ) { backStackEntry ->
+                    val recipeId = backStackEntry.arguments?.getString("recipeId")
+                    if (recipeId == null) {
+                        Log.e("RecipeApp", "RecipeDetailsScreen: recipeId is null")
+                        navController.popBackStack()
+                        return@composable
+                    }
 
                     val recipeDetailsViewModel: RecipeDetailViewModel = hiltViewModel()
                     val profileViewModel: ProfileViewModel = hiltViewModel()
                     val favoritesViewModel: FavoritesViewModel = hiltViewModel()
 
-                    // Retrieve the recipe from the previous back stack entry
-                    val recipe = navController.previousBackStackEntry?.savedStateHandle?.get<Recipe>("recipe")
-                        ?: Recipe("", "", "", "", "")
-
-                    // Match the signature of the RecipeDetailScreen function
                     RecipeDetailScreen(
-                        recipe = recipe,
+                        recipeId = recipeId,
                         viewModel = recipeDetailsViewModel,
                         favoritesViewModel = favoritesViewModel,
                         profileViewModel = profileViewModel,
@@ -167,8 +173,7 @@ fun RecipeApp(
                 composable(route = Screen.RecommendationsScreen.route) {
                     RecommendationsScreen(
                         onRecipeClick = { recipe ->
-                            navController.currentBackStackEntry?.savedStateHandle?.set("recipe", recipe)
-                            navController.navigate(Screen.RecipeDetailsScreen.route)
+                            navController.navigate(Screen.RecipeDetailsScreen.createRoute(recipe.idMeal))
                         }
                     )
                 }

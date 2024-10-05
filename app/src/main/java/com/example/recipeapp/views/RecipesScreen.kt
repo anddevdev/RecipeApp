@@ -23,14 +23,14 @@ import com.example.recipeapp.viewmodels.RecipeViewModel
 
 @Composable
 fun RecipesScreen(viewModel: RecipeViewModel = hiltViewModel(),
-                  category: Category,
+                  categoryName: String,
                   onRecipeClick: (Recipe) -> Unit) {
 
     val recipesState by viewModel.recipesState
     var searchQuery by remember { mutableStateOf("") }
 
-    LaunchedEffect(category) {
-        viewModel.fetchRecipesByCategory(category.strCategory)
+    LaunchedEffect(categoryName) {
+        viewModel.fetchRecipesForCategory(categoryName)
     }
 
     // Filter recipes based on search query

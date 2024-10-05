@@ -25,31 +25,27 @@ class RecipeDetailViewModel @Inject constructor(
     private val _existingNotes = MutableLiveData<List<Note>>()
     val existingNotes: LiveData<List<Note>> = _existingNotes
 
+    private val _recipeRating = MutableLiveData<Pair<Double, Int>>() // averageRating, ratingCount
+    val recipeRating: LiveData<Pair<Double, Int>> get() = _recipeRating
+
+
     init {
         _recipeDetailState.value = RecipeDetailState(loading = true)
     }
 
-    fun fetchRecipeDetailsIfNeeded(recipeName: String, userId: String) {
-        if (_recipeDetailState.value?.recipe == null) {
-            fetchRecipeDetails(recipeName, userId)
-        }
-    }
-
-    private fun fetchRecipeDetails(recipeName: String, userId: String) {
+    fun getRecipeDetails(recipeId: String) {
         viewModelScope.launch {
             try {
-                Log.d("RecipeDetailsViewModel", "Fetching details for recipe: $recipeName")
-                val response = recipeDetailsApiService.getRecipeByName(recipeName)
-                Log.d("RecipeDetailsViewModel", "Response: $response")
-                val recipe = response.meals.firstOrNull()
+                val response = recipeDetailsApiService.getRecipeById(recipeId)
+                val recipe = response?.meals?.firstOrNull()
                 if (recipe != null) {
-                    _recipeDetailState.value = RecipeDetailState(recipe = recipe, loading = false, error = null)
-                    getNotesForRecipeAndUser(recipe.idMeal, userId) // Pass userId here
+                    _recipeDetailState.postValue(RecipeDetailState(recipe = recipe, loading = false))
                 } else {
-                    _recipeDetailState.value = RecipeDetailState(loading = false, error = "Recipe not found")
+                    _recipeDetailState.postValue(RecipeDetailState(loading = false, error = "Recipe not found"))
                 }
             } catch (e: Exception) {
-                _recipeDetailState.value = RecipeDetailState(loading = false, error = "Error fetching recipe details")
+                _recipeDetailState.postValue(RecipeDetailState(loading = false, error = "Error fetching recipe details"))
+                Log.e("RecipeDetailViewModel", "Error fetching recipe details: ${e.message}")
             }
         }
     }
@@ -96,6 +92,25 @@ class RecipeDetailViewModel @Inject constructor(
         val updatedNotes = _existingNotes.value?.toMutableList() ?: mutableListOf()
         updatedNotes.removeAll { it.noteId == noteId }
         _existingNotes.postValue(updatedNotes)
+    }
+
+    fun addRating(recipeId: String, userId: String, rating: Int) {
+        viewModelScope.launch {
+            firestoreRepository.addRecipeRating(recipeId, userId, rating)
+            updateRecipeRating(recipeId)
+        }
+    }
+
+    fun updateRecipeRating(recipeId: String?) {
+        if (recipeId.isNullOrBlank()) {
+            Log.e("RecipeDetailViewModel", "Invalid recipeId: $recipeId")
+            return
+        }
+
+        viewModelScope.launch {
+            val rating = firestoreRepository.getRecipeRating(recipeId)
+            _recipeRating.value = rating
+        }
     }
 
     data class RecipeDetailState(

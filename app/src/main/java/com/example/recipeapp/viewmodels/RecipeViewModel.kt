@@ -21,27 +21,19 @@ class RecipeViewModel @Inject constructor(
     val recipesState: State<RecipesState> = _recipesState
 
 
-
-fun fetchRecipesByCategory(category: String) {
-    viewModelScope.launch {
-        try {
-            Log.d("RecipeViewModel", "Fetching recipes for category: $category")
-            val response = recipeApiService.getRecipesByCategory(category)
-            _recipesState.value = _recipesState.value.copy(
-                list = response.meals ?: emptyList(),
-                loading = false,
-                error = null
-            )
-            Log.d("RecipeViewModel", "Recipes fetched successfully.")
-        } catch (e: Exception) {
-            _recipesState.value = _recipesState.value.copy(
-                loading = false,
-                error = "Error fetching recipes: ${e.message}"
-            )
-            Log.e("RecipeViewModel", "Error fetching recipes: ${e.message}")
+    fun fetchRecipesForCategory(categoryName: String) {
+        viewModelScope.launch {
+            try {
+                Log.d("RecipeViewModel", "Fetching recipes for category: $categoryName")
+                _recipesState.value = RecipesState(loading = true)
+                val response = recipeApiService.getRecipesByCategory(categoryName)
+                _recipesState.value = RecipesState(list = response.meals, loading = false)
+                Log.d("RecipeViewModel", "Recipes fetched successfully.")
+            } catch (e: Exception) {
+                _recipesState.value = RecipesState(error = e.localizedMessage, loading = false)
+            }
         }
     }
-}
 
     data class RecipesState(
         val loading: Boolean = true,
